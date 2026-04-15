@@ -35,3 +35,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 .azure
+.venv
+*.pdf
+*.log
+__pycache__/

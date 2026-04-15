@@ -14,3 +14,7 @@ output "AZURE_LOCATION" {
 output "AZURE_TENANT_ID" {
   value = data.azurerm_client_config.current.tenant_id
 }
+
+output "AZURE_Resource_Group" {
+  value = azurerm_resource_group.rg.name
+}
