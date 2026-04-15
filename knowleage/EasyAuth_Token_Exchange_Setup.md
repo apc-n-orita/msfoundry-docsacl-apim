@@ -54,8 +54,8 @@ AZURE_CLIENT_ID="your-client-id"
 AZURE_CLIENT_SECRET="your-client-secret"
 
 # Azure AI Search設定
-SEARCH_SERVICE_NAME="testaif"
-SEARCH_SERVICE_ENDPOINT="https://testaif.search.windows.net"
+SEARCH_SERVICE_NAME="<your-ais-name>"
+SEARCH_SERVICE_ENDPOINT="https://<your-ais-name>.search.windows.net"
 SEARCH_INDEX_NAME="index-acl-groups"
 ```
 

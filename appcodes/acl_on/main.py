@@ -35,7 +35,7 @@ def main():
         with tracer.start_as_current_span("knowledge-agent-session"):
             modules.run_chat_loop(
                 openai_client, http_client, user_token, tracer,
-                config.project_endpoint, config.model_deployment, config.kb_mcp_url, config.project_ais_connection_name
+                config.project_endpoint, config.model_deployment, config.kb_acl_mcp_url, config.project_ais_connection_name
             )
 
     except Exception as e:

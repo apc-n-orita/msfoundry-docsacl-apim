@@ -703,31 +703,3 @@ resource "null_resource" "foundry_agent" {
     interpreter = ["/bin/bash", "-c"]
   }
 }
-
-/*
-resource "null_resource" "foundry_agent_setup" {
-  for_each = azapi_resource.ai_foundry_project
-  triggers = {
-    endpoint              = "https://${module.ai_foundry[each.key].name}.services.ai.azure.com/api/projects/${each.value.name}"
-    project_name          = each.value.name
-    agent_name            = "info-agent-tartaria"
-    agent_version         = "1"
-    mcp_server_label      = azapi_resource.conn_foundryiq[each.key].name
-    mcp_server_url        = azapi_resource.conn_foundryiq[each.key].body.properties.target
-    project_connection_id = azapi_resource.conn_foundryiq[each.key].name
-    model_name            = var.openai_chat.model_name
-    instructions          = "- すべての情報はツールまたはナレッジから取得してください。\n- 都市伝説的要素を含む場合でも、AI 独自の見解や評価は加えず、取得情報の提示のみに徹してください。\n     - 都市伝説的要素を含む回答の末尾には、最終的な判断をユーザーに委ねる旨の一文を必ず追記してください。（都市伝説的要素以外の場合は不要）\n- 必ず参照情報も併せて提示してください。"
-  }
-  provisioner "local-exec" {
-    command     = <<EOT
-        ENDPOINT="${self.triggers.endpoint}"
-        ACCESS_TOKEN="$(az account get-access-token --resource https://ai.azure.com/ --query accessToken -o tsv)"
-        curl -X POST "$ENDPOINT/agents?api-version=v1" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $ACCESS_TOKEN" \
-          -d "{\n  \"name\": \"${self.triggers.agent_name}\",\n  \"version\": \"${self.triggers.agent_version}\",\n  \"description\": \"\",\n  \"definition\": {\n    \"kind\": \"prompt\",\n    \"model\": \"${self.triggers.model_name}\",\n    \"instructions\": \"${self.triggers.instructions}\",\n    \"tools\": [\n      {\n        \"type\": \"mcp\",\n        \"server_label\": \"${self.triggers.mcp_server_label}\",\n        \"server_url\": \"${self.triggers.mcp_server_url}\",\n        \"allowed_tools\": {\n          \"tool_names\": [\"knowledge_base_retrieve\"]\n        },\n        \"require_approval\": \"never\",\n        \"project_connection_id\": \"${self.triggers.project_connection_id}\"\n      }\n    ]\n  },\n  \"status\": \"active\"\n}"
-      EOT
-    interpreter = ["/bin/bash", "-c"]
-  }
-}
-*/

@@ -8,7 +8,7 @@ class AppConfig:
     """アプリケーション設定"""
     project_endpoint: str
     model_deployment: str
-    kb_mcp_url: str
+    kb_acl_mcp_url: str
     project_ais_connection_name: str
     client_id: str
     client_secret: str
@@ -27,7 +27,7 @@ def load_config() -> AppConfig:
     return AppConfig(
         project_endpoint=os.getenv("PROJECT_ENDPOINT"),
         model_deployment=os.getenv("MODEL_DEPLOYMENT"),
-        kb_mcp_url=os.getenv("KB_MCP_URL"),
+        kb_acl_mcp_url=os.getenv("KB_ACL_MCP_URL"),
         project_ais_connection_name=os.getenv("PROJECT_AIS_CONNECTION_NAME"),
         client_id=os.getenv("AZURE_OBO_CLIENT_ID"),
         client_secret=os.getenv("AZURE_OBO_CLIENT_SECRET"),
@@ -41,7 +41,7 @@ def validate_env_vars():
     required_vars = {
         "PROJECT_ENDPOINT": "Azure AI Project endpoint URL",
         "MODEL_DEPLOYMENT": "使用するモデルのデプロイ名",
-        "KB_MCP_URL": "Knowledge Base MCP サーバー URL",
+        "KB_ACL_MCP_URL": "Knowledge Base MCP サーバー URL",
         "PROJECT_AIS_CONNECTION_NAME": "Foundry IQ への接続名",
         "AZURE_OBO_CLIENT_ID": "Azure ADアプリケーションのクライアントID (OBOフロー用)",
         "AZURE_OBO_CLIENT_SECRET": "Azure ADアプリケーションのクライアントシークレット (OBOフロー用)",

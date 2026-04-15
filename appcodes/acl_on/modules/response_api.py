@@ -31,7 +31,7 @@ def create_openai_client(project_endpoint, credential):
 
 
 def run_chat_loop(openai_client, http_client, user_token, tracer, 
-                  project_endpoint, model_deployment, kb_mcp_url, project_connection_id):
+                  project_endpoint, model_deployment, kb_acl_mcp_url, project_connection_id):
     
     print(f"=== MS foundry 接続情報 ===")
     print(f"Project: {project_endpoint}")
@@ -68,7 +68,7 @@ def run_chat_loop(openai_client, http_client, user_token, tracer,
                 mcp_tool = {
                     "type": "mcp",
                     "server_label": "kb_acl_test",
-                    "server_url": kb_mcp_url,
+                    "server_url": kb_acl_mcp_url,
                     "project_connection_id": project_connection_id,
                     "require_approval": "never",
                     "allowed_tools": ["knowledge_base_retrieve"],

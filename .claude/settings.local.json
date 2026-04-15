@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__microsoftdocs__microsoft_docs_search",
+      "mcp__microsoftdocs__microsoft_docs_fetch"
+    ]
+  }
+}

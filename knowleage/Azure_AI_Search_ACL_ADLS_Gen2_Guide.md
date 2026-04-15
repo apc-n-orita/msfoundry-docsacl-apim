@@ -480,20 +480,16 @@ file_client.set_access_control(
 アクセス権限は以下の順序で評価され、**最初にマッチした権限が適用**されます：
 
 1. **Superuser（スーパーユーザー）** ⭐ 最優先
-
    - すべてのファイル・ディレクトリに`rwx`権限
 
 2. **Owning user（所有ユーザー）**
-
    - ファイル/ディレクトリの作成者
 
 3. **Named user, service principal, managed identity**
-
    - 明示的に指定されたユーザー・SP・MI
    - 例: `user:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:r-x`
 
 4. **Owning group or named group（グループ）**
-
    - 所有グループまたは明示的に指定されたグループ
    - **特殊ルール**: 複数グループの場合、必要な権限が得られるまで**すべて評価**
 
@@ -1154,7 +1150,7 @@ def search():
         # JWTをデコードして検証
         decoded = jwt.decode(
             user_token,
-            options={"verify_signature": False},  # 本番環境では署名検証を実施
+            options={"verify_signature": False},  # 実運用では署名検証を実施
             audience="https://storage.azure.com"
         )
         print(f"User: {decoded.get('preferred_username')}")
@@ -1400,17 +1396,14 @@ az ad app permission add \
 **権限の詳細:**
 
 1. **API: `https://storage.azure.com`**
-
    - Azure Storage（Blob Storage、ADLS Gen2 含む）の API
    - この API にアクセスするための権限を要求
 
 2. **Permission ID: `e03f9065-8a8e-4d8e-b66d-66c01c5d4568`**
-
    - これは`user_impersonation`スコープの一意識別子（GUID）
    - Azure Storage が定義している固定の ID
 
 3. **Permission Type: `Scope`**
-
    - `Scope`: **委任されたアクセス許可**（Delegated Permission）
      - ユーザーの代わりにアプリがアクセス
      - ユーザーの権限の範囲内でのみ動作
@@ -1473,7 +1466,6 @@ az ad app permission admin-consent --id <app-id>
 ```
 
 - **必要な場合:**
-
   - テナント設定で「ユーザーによる同意」が無効
   - 高権限のスコープ（Application Permission）
   - 組織のセキュリティポリシー
@@ -1548,7 +1540,6 @@ az ad app permission add \
    ```
 
 2. **権限が反映されない場合:**
-
    - アプリの再起動
    - ブラウザキャッシュをクリア
    - トークンキャッシュを削除
@@ -1704,7 +1695,7 @@ const msalInstance = new PublicClientApplication({
 const searchClient = new SearchClient(
   "https://<search-service>.search.windows.net",
   "my-index",
-  new AzureKeyCredential("<query-key>") // ⚠️ クライアント側に公開される
+  new AzureKeyCredential("<query-key>"), // ⚠️ クライアント側に公開される
 );
 
 async function searchWithUserPermissions(query) {
@@ -2237,22 +2228,18 @@ sequenceDiagram
 ## まとめ
 
 1. **Azure AI Search はドキュメントレベルのアクセス制御に対応**
-
    - ADLS Gen2 の ACL をネイティブサポート（プレビュー）
    - セキュリティフィルタで柔軟なカスタム実装も可能
 
 2. **ADLS Gen2 = 階層型 NS 有効化した Blob Storage**
-
    - ファイル/ディレクトリ単位の細かい ACL 設定が可能
    - アトミック操作によるパフォーマンス向上
 
 3. **API 選択が重要**
-
    - ACL 設定には`dfs.core.windows.net`エンドポイント必須
    - 既存の Blob API も動作するが最適化されていない
 
 4. **ACL 評価は優先順位に従う**
-
    - Superuser → 所有ユーザー → 名前付きユーザー → グループ → その他
    - RBAC が最優先、ACL はその次
 

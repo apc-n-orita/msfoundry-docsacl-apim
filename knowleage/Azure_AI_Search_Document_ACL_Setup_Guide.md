@@ -834,7 +834,7 @@ az storage fs access set \
   "retrievable": true  // デバッグ用
 }
 
-// 本番環境
+// 実運用
 {
   "name": "GroupIds",
   "type": "Collection(Edm.String)",
@@ -942,7 +942,7 @@ az monitor diagnostic-settings create \
 ## admin権限(検索インデックス共同作成者割り当てていること)で確認
 
 ```bash
-ACCESS_TOKEN=$(az account get-access-token --resource https://search.azure.com --query accessToken -o tsv) &&  curl -X POST    "https://testaif.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview"    -H "Authorization: Bearer $ACCESS_TOKEN"    -H "x-ms-enable-elevated-read: true"    -H "Content-Type: application/json"    -d '{
+ACCESS_TOKEN=$(az account get-access-token --resource https://search.azure.com --query accessToken -o tsv) &&  curl -X POST    "https://<your-ais-name>.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview"    -H "Authorization: Bearer $ACCESS_TOKEN"    -H "x-ms-enable-elevated-read: true"    -H "Content-Type: application/json"    -d '{
      "search": "*",
      "top": 3,
      "count": true
@@ -957,7 +957,7 @@ sleep 20 && \
 ACCESS_TOKEN=$(az account get-access-token --resource https://search.azure.com --query accessToken -o tsv) && \
 echo "=== UserIdsフィールドを確認（サンプル3件） ===" && \
 curl -X POST \
-  "https://testaif.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "x-ms-enable-elevated-read: true" \
   -H "Content-Type: application/json" \
@@ -977,26 +977,26 @@ curl -X POST \
 ACCESS_TOKEN=$(az account get-access-token --resource https://search.azure.com --query accessToken -o tsv) && \
 echo "=== ステップ1: Resync API（permissionsモード設定） ===" && \
 curl -X POST \
-  "https://testaif.search.windows.net/indexers/indexer-acl/resync?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexers/indexer-acl/resync?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"options": ["permissions"]}' && \
 echo -e "\n\n=== ステップ2: インデクサー実行（1回目 - Resyncモード） ===" && \
 curl -X POST \
-  "https://testaif.search.windows.net/indexers/indexer-acl/run?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexers/indexer-acl/run?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Length: 0" && \
 echo -e "\n\n30秒待機中..." && \
 sleep 30 && \
 echo "=== ステップ3: インデクサー実行（2回目 - 通常モード） ===" && \
 curl -X POST \
-  "https://testaif.search.windows.net/indexers/indexer-acl/run?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexers/indexer-acl/run?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Length: 0" && \
 echo -e "\n\n10秒待機後、ステータス確認..." && \
 sleep 10 && \
 curl -X GET \
-  "https://testaif.search.windows.net/indexers/indexer-acl/status?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexers/indexer-acl/status?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" | jq '{
     status: .status,
     lastResult: {
@@ -1015,7 +1015,7 @@ sleep 20 && \
 ACCESS_TOKEN=$(az account get-access-token --resource https://search.azure.com --query accessToken -o tsv) && \
 echo "=== UserIdsフィールドを確認（サンプル3件） ===" && \
 curl -X POST \
-  "https://testaif.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview" \
+  "https://<your-ais-name>.search.windows.net/indexes/index-acl/docs/search?api-version=2025-11-01-preview" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "x-ms-enable-elevated-read: true" \
   -H "Content-Type: application/json" \
