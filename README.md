@@ -1,6 +1,6 @@
 # APIMを介したFoundry IQのナレッジエージェントハンズオン
 
-Azure API Management (APIM) をゲートウェイとして、Azure AI Foundry IQ の Knowledge Base に接続するナレッジエージェントを構築するハンズオンです。
+Azure API Management (APIM) をゲートウェイとして、Foundry IQ の Knowledge Base に接続するナレッジエージェントを構築するハンズオンです。
 ドキュメントレベルのアクセス制御 (ACL) を Azure Data Lake Storage Gen2 と Azure AI Search の組み合わせで実現し、ユーザーごとに参照できるドキュメントを制限する仕組みを体験します。
 
 ---
@@ -38,7 +38,7 @@ ADLS Gen2 (ais-docs コンテナ)
 
 ADLS ACL:
   - ルート: group (adls-acl-group) = --x  (ディレクトリのトラバースのみ)
-  - Tartarian/: group (adls-acl-group) = r-x  (読み取り可)
+  - Tartarian/*: group (adls-acl-group) = r-x  (読み取り可)
 
 AI Search インデクサー:
   - ADLS のグループ ACL を読み取り、GroupIds フィールドとしてインデックスに格納
@@ -52,9 +52,7 @@ AI Search インデクサー:
 
 ## セットアップ
 
-インフラのデプロイ手順・環境変数の設定方法は [handson/環境構築/環境構築.md](handson/環境構築/環境構築.md) を参照してください。
-
----
+ハンズオン環境のセットアップ方法は [環境構築](handson/環境構築/環境構築.md) を参照してください。
 
 ## ハンズオンシナリオ
 
@@ -72,5 +70,15 @@ AI Search インデクサー:
 | RAG          | Foundry Agent が自動       | Foundry IQ が自動             | 自前実装                        |
 | API          | `responses.create` (agent) | `responses.create` (MCP tool) | `chat.completions` + Search     |
 | 複雑さ       | 低                         | 中                            | 高                              |
+
+---
+
+---
+
+## 技術解説
+
+ハンズオンで体験したアーキテクチャの詳細解説（OBO フロー・セキュリティ・AI 評価・Observability など）はこちら。
+
+→ **[技術解説を読む](handson/tech/tech.md)**
 
 ---

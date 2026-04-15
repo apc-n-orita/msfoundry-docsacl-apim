@@ -125,6 +125,10 @@ Purview の DLP などの **Data Security ポリシー**が適用されるのは
 | DLP 防止・データ漏洩対策   | ❌                | ✅              | ✅          |
 | データ過剰共有防止         | ❌                | ❌              | ✅          |
 
+> ※ **Foundry ネイティブでの DLP・データ過剰共有防止の代替策**  
+> 現時点で Foundry ネイティブはこれらに非対応ですが、**Azure AI Search × Purview 機密度ラベル連携**を利用することで、ドキュメントに付与された Purview 機密度ラベルをインデックス作成時に自動抽出し、クエリ時にユーザーの READ 使用権と照合してドキュメントレベルのアクセス制御を実現できます。RAG パイプラインでの機密情報フィルタリングに有効です。  
+> → [Azure AI Search × Purview 機密度ラベル連携ガイド](../../knowleage/Azure_AI_Search_Purview_Sensitivity_Labels_Guide.md)
+
 詳細は [Microsoft Foundry × Microsoft Purview 連携ガイド](../../knowleage/Microsoft_Foundry_Purview_Integration_Guide.md) を参照してください。
 
 ---
