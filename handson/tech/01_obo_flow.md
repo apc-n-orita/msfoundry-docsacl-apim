@@ -153,7 +153,7 @@ az ad app federated-credential create \
 ```python
 mcp_tool = {
     "type": "mcp",
-    "server_url": KB_ACL_MCP_URL,
+    "server_url": kb_acl_mcp_url,
     "project_connection_id": "foundryIQ-docsacl",
     "headers": {
         "x-ms-query-source-authorization": obo_token  # OBO トークン

@@ -47,7 +47,7 @@ AI Foundry Project エンドポイント
   │    model=model_deployment,
   │    tools=[{
   │      type: "mcp",
-  │      server_url: KB_ACL_MCP_URL,          ← Foundry IQ MCP サーバー URL
+  │      server_url: kb_acl_mcp_url,          ← Foundry IQ MCP サーバー URL
   │      project_connection_id: "foundryIQ-docsacl",
   │      headers: {
   │        "x-ms-query-source-authorization": user_token  ← OBO トークン
@@ -154,15 +154,15 @@ Project: https://...
 
 シナリオ 2 の `user_chat_turn` スパンには以下のカスタム属性が記録されます。
 
-| 属性名 | 内容 |
-|---|---|
-| `model_deployment` | 使用するモデルのデプロイ名 |
-| `gen_ai.prompt` | ユーザーの入力テキスト |
-| `tokens.input` | 入力トークン数 |
-| `tokens.output` | 出力トークン数 |
-| `tokens.total` | 合計トークン数 |
-| `tokens.input.cached` | キャッシュ済み入力トークン数 |
-| `tokens.output.reasoning` | 推論トークン数 |
+| 属性名                    | 内容                         |
+| ------------------------- | ---------------------------- |
+| `model_deployment`        | 使用するモデルのデプロイ名   |
+| `gen_ai.prompt`           | ユーザーの入力テキスト       |
+| `tokens.input`            | 入力トークン数               |
+| `tokens.output`           | 出力トークン数               |
+| `tokens.total`            | 合計トークン数               |
+| `tokens.input.cached`     | キャッシュ済み入力トークン数 |
+| `tokens.output.reasoning` | 推論トークン数               |
 
 ### Step 7: 終了する
 
@@ -200,7 +200,7 @@ def exchange_token_for_search(user_assertion, client_id, client_secret, tenant_i
 mcp_tool = {
     "type": "mcp",
     "server_label": "kb_acl_test",
-    "server_url": KB_ACL_MCP_URL,
+    "server_url": kb_acl_mcp_url,
     "project_connection_id": project_connection_id,  # "foundryIQ-docsacl"
     "require_approval": "never",
     "allowed_tools": ["knowledge_base_retrieve"],

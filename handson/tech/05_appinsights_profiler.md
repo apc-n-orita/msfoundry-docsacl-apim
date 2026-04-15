@@ -127,9 +127,6 @@ Azure Private Link を使用している環境では、Profiler / Snapshot Debug
 
 ---
 
-## 前のドキュメントに戻る
+## 前のドキュメント
 
 - [Microsoft Foundry のさらなるセキュリティ強化](./04_advanced_security.md)
-- [AI 評価 (Continuous Evaluation) と Observability](./03_evaluation_observability.md)
-- [セキュリティ — APIM ゲートウェイ制御と Foundry ガードレール](./02_security.md)
-- [OBO フロー実運用](./01_obo_flow.md)

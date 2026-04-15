@@ -144,6 +144,12 @@ with (
 
 ---
 
+## 前のドキュメント
+
+- [セキュリティ — APIM ゲートウェイ制御と Foundry ガードレール](./02_security.md)
+
+---
+
 ## 次のステップ
 
 - [Microsoft Foundry のさらなるセキュリティ強化](./04_advanced_security.md)
