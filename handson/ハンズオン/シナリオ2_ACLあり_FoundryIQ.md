@@ -222,3 +222,9 @@ response = openai_client.responses.create(
 ## 次のシナリオ
 
 OBO フローと Azure AI Search を直接組み合わせるクラシック RAG パターンは、[シナリオ 3](./シナリオ3_ACLあり_クラシックRAG.md) で体験できます。
+
+---
+
+## 前のシナリオ
+
+- [シナリオ 1 — ACL なし](./シナリオ1_ACLなし.md)

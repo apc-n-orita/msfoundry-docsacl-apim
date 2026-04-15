@@ -133,12 +133,12 @@ Purview の DLP などの **Data Security ポリシー**が適用されるのは
 
 ---
 
-## 前のドキュメント
-
-- [AI 評価 (Continuous Evaluation) と Observability](./03_evaluation_observability.md)
-
----
-
 ## 次のステップ
 
 - [Application Insights Profiler / Snapshot Debugger 設定ガイド](./05_appinsights_profiler.md)
+
+---
+
+## 前のドキュメント
+
+- [AI 評価 (Continuous Evaluation) と Observability](./03_evaluation_observability.md)

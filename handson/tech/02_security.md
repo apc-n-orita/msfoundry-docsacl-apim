@@ -241,12 +241,12 @@ Connection のシークレットはデフォルトで Foundry が管理する Ke
 
 ---
 
-## 前のドキュメント
-
-- [ドキュメント ACL の OBO フロー実運用](./01_obo_flow.md)
-
----
-
 ## 次のステップ
 
 - [AI 評価 (Continuous Evaluation) と Observability](./03_evaluation_observability.md)
+
+---
+
+## 前のドキュメント
+
+- [ドキュメント ACL の OBO フロー実運用](./01_obo_flow.md)
