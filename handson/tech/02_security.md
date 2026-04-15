@@ -111,7 +111,7 @@ Azure AI Foundry の **Guardrails**（旧 Content Safety / Guardrails & Controls
 | **User prompt attacks**                  | ✅     | ✅           | ジェイルブレイク攻撃（Prompt Shields）を検出・ブロック             |
 | **Indirect attacks**                     | ✅     | ✅           | RAG ドキュメントに埋め込まれた間接プロンプトインジェクションを検出 |
 | **Protected material**                   | ✅     | ✅           | 著作権テキスト・コードの出力を制御                                 |
-| **Groundedness**                         | ✅     | ✅           | ドキュメントと無関係な「ハルシネーション」応答を検出               |
+| **Groundedness** (preview)               | ✅     | ❌           | ドキュメントと無関係な「ハルシネーション」応答を検出               |
 | **PII** (preview)                        | ✅     | ✅           | 個人情報を出力にアノテーション・ブロック                           |
 | **Task Adherence**                       | ✅     | ✅           | システムプロンプトへの準拠度を評価                                 |
 | **Spotlighting** (preview)               | ✅     | ❌           | 外部ドキュメントを Base64 エンコードして信頼度を下げる追加防御層   |
