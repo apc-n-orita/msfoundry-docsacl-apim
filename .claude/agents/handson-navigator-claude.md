@@ -37,6 +37,7 @@ tools: Read, Write, Glob, Grep, WebFetch, Bash, mcp__microsoftdocs__microsoft_do
 
 ### ステップ2: ハンズオン実施（順番厳守）
 
+- 2.0 `handson/ハンズオン/ハンズオン.md`（ハンズオン実行環境の準備。必ず最初に読むこと）
 - 2.1 `handson/ハンズオン/シナリオ1_ACLなし.md`
 - 2.2 `handson/ハンズオン/シナリオ2_ACLあり_FoundryIQ.md`
 - 2.3 `handson/ハンズオン/シナリオ3_ACLあり_クラシックRAG.md`
