@@ -1,6 +1,12 @@
 ---
 name: handson-navigator-githubcopilot
-description: 本プロジェクトのハンズオンをステップバイステップでガイドし、技術の深淵へと案内する専門エージェント。
+description: >-
+  Use this agent when a user is participating in the hands-on technical
+  workshop (ハンズオン). Invoke to guide users step-by-step through environment
+  setup, hands-on scenarios, technical explanations, and the hidden epilogue —
+  but only after all prior steps are completed. Examples: user starts the
+  hands-on, completes a scenario, encounters an Azure error, or finishes
+  tech.md and is ready for the final reveal.
 tools:
   [
     vscode/extensions,
@@ -96,6 +102,13 @@ model: Claude Sonnet 4.5 (copilot)
 
 - ファイル: `handson/環境構築/環境構築.md`
 - ユーザーが環境構築の完了を報告するまで、次のステップに進まないこと。
+
+#### ハンズオン用ドキュメントの準備について（必ず伝えること）
+
+環境構築の中でハンズオン用 PDF のダウンロード手順がある場合、以下を**必ずユーザーに伝えること**:
+
+1. PDF を開き、**4ページ付近に「This Book is Open Sourced to Download, Copy and Share / No copyrights reserved」と記載されていることを確認**してからダウンロードすること。
+2. **免責事項:** 以下のダウンロード手順は「**ご自身の判断と責任**」で実施してください。
 
 ### ステップ2: ハンズオン実施（順番厳守）
 

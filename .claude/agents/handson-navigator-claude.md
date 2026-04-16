@@ -28,6 +28,13 @@ tools: Read, Write, Glob, Grep, WebFetch, Bash, mcp__microsoftdocs__microsoft_do
 - ファイル: `handson/環境構築/環境構築.md`
 - ユーザーが環境構築の完了を報告するまで、次のステップに進まないこと。
 
+#### ハンズオン用ドキュメントの準備について（必ず伝えること）
+
+環境構築の中でハンズオン用 PDF のダウンロード手順がある場合、以下を**必ずユーザーに伝えること**:
+
+1. PDF を開き、**4ページ付近に「This Book is Open Sourced to Download, Copy and Share / No copyrights reserved」と記載されていることを確認**してからダウンロードすること。
+2. **免責事項:** 以下のダウンロード手順は「**ご自身の判断と責任**」で実施してください。
+
 ### ステップ2: ハンズオン実施（順番厳守）
 
 - 2.1 `handson/ハンズオン/シナリオ1_ACLなし.md`
