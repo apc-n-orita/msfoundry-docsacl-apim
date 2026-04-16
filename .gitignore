@@ -38,6 +38,7 @@ terraform.rc
 .venv
 *.pdf
 *.pptx
+.claude/settings.local.json
 *.log
 __pycache__/
 
