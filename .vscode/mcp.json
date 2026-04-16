@@ -2,7 +2,9 @@
   "servers": {
     "microsoftdocs": {
       "type": "http",
-      "url": "https://learn.microsoft.com/api/mcp"
+      "url": "https://learn.microsoft.com/api/mcp",
+      "gallery": "https://api.mcp.github.com/2025-09-15/v0/servers/e0455530-d34a-4795-8dc6-b2888ae76c27",
+      "version": "1.0.0"
     }
   }
 }
