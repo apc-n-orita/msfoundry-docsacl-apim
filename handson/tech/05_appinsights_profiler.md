@@ -130,3 +130,11 @@ Azure Private Link を使用している環境では、Profiler / Snapshot Debug
 ## 前のドキュメント
 
 - [Microsoft Foundry のさらなるセキュリティ強化](./04_advanced_security.md)
+
+---
+
+<!--
+  最後まで読んでくれた方へ
+-->
+
+[最後まで読んでくれた方へ](../extra/spirituality_in_it.md)

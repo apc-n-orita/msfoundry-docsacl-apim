@@ -37,5 +37,7 @@ terraform.rc
 .azure
 .venv
 *.pdf
+*.pptx
 *.log
 __pycache__/
+

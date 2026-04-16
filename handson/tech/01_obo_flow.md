@@ -49,7 +49,7 @@ sequenceDiagram
 
 App Service に **Easy Auth（組み込み認証）** を有効化することで、ブラウザからのアクセスを Entra ID 認証にリダイレクトします。
 
-> **ポイント**: ハンズオンで実施した「ユーザーへの同意付与」（`api://<client_id>/user_impersonation` スコープへの同意）は、App Service の EasyAuth でユーザーがブラウザ経由でログインする際に行われます。実運用では事前にテナント管理者が一括同意するか、ユーザーが初回ログイン時にブラウザで同意します。
+> **ポイント**: ハンズオンで実施した「ユーザーへの同意付与」（`api://<client_id>/user_impersonation` スコープへの同意）は、App Service の EasyAuth でユーザーがブラウザ経由でログインする際に行われます。実運用では、ユーザーが初回ログイン時にブラウザで同意します。
 
 **設定すべきスコープ（App Service の認証設定）:**
 
