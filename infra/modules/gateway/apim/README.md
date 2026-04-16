@@ -45,6 +45,8 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_APIM_MANAGED_IDENTITY_PRINCIPAL_ID"></a> [APIM\_MANAGED\_IDENTITY\_PRINCIPAL\_ID](#output\_APIM\_MANAGED\_IDENTITY\_PRINCIPAL\_ID) | n/a |
+| <a name="output_APIM_SERVICE_ID"></a> [APIM\_SERVICE\_ID](#output\_APIM\_SERVICE\_ID) | n/a |
 | <a name="output_APIM_SERVICE_NAME"></a> [APIM\_SERVICE\_NAME](#output\_APIM\_SERVICE\_NAME) | n/a |
 | <a name="output_API_MANAGEMENT_LOGGER_ID"></a> [API\_MANAGEMENT\_LOGGER\_ID](#output\_API\_MANAGEMENT\_LOGGER\_ID) | n/a |
 | <a name="output_gateway_url"></a> [gateway\_url](#output\_gateway\_url) | n/a |

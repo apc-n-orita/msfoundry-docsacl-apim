@@ -27,7 +27,7 @@
 | <a name="input_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#input\_log\_analytics\_workspace\_id) | The ID of the Log Analytics Workspace to send diagnostics logs to. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Name of the Azure Cognitive Search service | `string` | n/a | yes |
 | <a name="input_rg_name"></a> [rg\_name](#input\_rg\_name) | Resource group name for the search service | `string` | n/a | yes |
-| <a name="input_bypass_network_rule"></a> [bypass\_network\_rule](#input\_bypass\_network\_rule) | network rule bypass options. | `string` | `"None"` | no |
+| <a name="input_bypass_network_rule"></a> [bypass\_network\_rule](#input\_bypass\_network\_rule) | network rule bypass options. | `string` | `"AzureServices"` | no |
 | <a name="input_disableLocalauth"></a> [disableLocalauth](#input\_disableLocalauth) | Disable local authentication for the AI service. | `bool` | `true` | no |
 | <a name="input_ip_rules"></a> [ip\_rules](#input\_ip\_rules) | List of allowed IP addresses or CIDR ranges for the AI Search service firewall. | `list(string)` | `[]` | no |
 | <a name="input_local_authentication_enabled"></a> [local\_authentication\_enabled](#input\_local\_authentication\_enabled) | Enable local authentication for the search service | `bool` | `false` | no |
@@ -45,5 +45,6 @@
 |------|-------------|
 | <a name="output_search_service_id"></a> [search\_service\_id](#output\_search\_service\_id) | The resource ID of the Azure Cognitive Search service. |
 | <a name="output_search_service_identity_principal_id"></a> [search\_service\_identity\_principal\_id](#output\_search\_service\_identity\_principal\_id) | The principal ID of the system-assigned managed identity for the Azure Cognitive Search service. |
+| <a name="output_search_service_identity_tenant_id"></a> [search\_service\_identity\_tenant\_id](#output\_search\_service\_identity\_tenant\_id) | The tenant ID of the system-assigned managed identity for the Azure Cognitive Search service. |
 | <a name="output_search_service_name"></a> [search\_service\_name](#output\_search\_service\_name) | The name of the Azure Cognitive Search service. |
 <!-- END_TF_DOCS -->
