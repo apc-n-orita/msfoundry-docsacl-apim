@@ -136,7 +136,9 @@ Azure ポータルで Application Insights を開きます。
 | `execute_tool`                          | MCP ツールの呼び出し            |
 | `mcp-foundryIQ.knowledge_base_retrieve` | ナレッジベースからの検索        |
 
-APIM 経由の OpenAI 呼び出し（チャット・埋め込み）も個別のスパンとして記録されます。
+Foundry IQ がナレッジ検索の内部で呼び出す **OpenAI エンドポイント（chat_completion・embedding）** も、同一の trace_id を持つスパンとして記録されます（APIM を経由するため `traceparent` が引き継がれます）。
+
+> **AI Search のトレースについて**: Foundry IQ は内部で AI Search も呼び出しますが、AI Search はトレースを Application Insights へ送信できないため、トレース上には現れません。OpenAI エンドポイントへの呼び出しのみが記録されます。
 
 ![APIM 経由の呼び出し詳細](image/3.png)
 
@@ -197,11 +199,20 @@ response = openai_client.responses.create(
 
 ### 分散トレースが実現できる理由
 
-クライアントから AI Foundry までの全区間が 1 本のトレースとして Application Insights に記録されるのは、**W3C TraceContext (`traceparent` ヘッダー)** を全区間で引き継いでいるためです。
+クライアントから AI Foundry、さらに Foundry IQ が呼び出す OpenAI エンドポイントまでの全区間が 1 本のトレースとして Application Insights に記録されるのは、**W3C TraceContext (`traceparent` ヘッダー)** を全区間で引き継いでいるためです。
 
 ```
-クライアント ──traceparent──▶ APIM ──traceparent──▶ AI Foundry
-  (生成)                    (引き継ぎ・転送)         (記録)
+[クライアント]                                              ✅ 記録
+     │ traceparent を生成・送信
+     ▼
+  [APIM]                                                    ✅ 記録
+     │ traceparent を引き継ぎ・転送
+     ▼
+[AI Foundry]（Foundry Agent / Foundry IQ）                  ✅ 記録
+     │
+     ├─▶ [OpenAI] chat_completion / embedding               ✅ 記録（APIM 経由で traceparent 引き継ぎ）
+     │
+     └─▶ [AI Search]                                        ❌ 記録されない（トレース送信不可）
 ```
 
 **① クライアント側: traceparent の生成と注入**
