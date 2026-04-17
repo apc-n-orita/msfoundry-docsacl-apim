@@ -31,7 +31,7 @@ sequenceDiagram
     Func->>Func: ⑥ MSAL OBO フロー<br/>acquire_token_on_behalf_of()<br/>scope: https://search.azure.com/user_impersonation
 
     Func->>APIM: ⑦ POST /foundryagent/...<br/>Authorization: Bearer <app_token><br/>x-ms-query-source-authorization: <obo_token>
-    APIM->>APIM: Entra ID トークン検証<br/>グループチェック / TPM 制御
+    APIM->>APIM: Entra ID トークン検証<br/>実運用: JWT の appid クレームで<br/>Functions のマネージド ID クライアント ID を検証 / TPM 制御
     APIM->>Foundry: ⑧ バックエンドプールへ転送<br/>（traceparent 引き継ぎ）
     Foundry->>AIS: ⑨ x-ms-query-source-authorization でフィルタ<br/>GroupIds ∩ ユーザーグループ のみ返却
     AIS-->>Foundry: フィルタ済みドキュメント
@@ -170,7 +170,7 @@ mcp_tool = {
 | ブラウザ → App Service  | アクセストークン             | `api://<client_id>/user_impersonation`        | EasyAuth による認証               |
 | App Service → Functions | 同上（転送）                 | 同上                                          | Functions の EasyAuth で検証      |
 | Functions 内（OBO）     | OBO トークン                 | `https://search.azure.com/user_impersonation` | AI Search の GroupIds フィルタ    |
-| Functions → APIM        | アプリトークン               | `https://ai.azure.com/`                       | APIM の Entra ID 検証             |
+| Functions → APIM        | アプリトークン（マネージド ID） | `https://ai.azure.com/`                     | APIM の Entra ID 検証（JWT の `appid` クレームで Functions のマネージド ID クライアント ID を確認） |
 | APIM → Foundry          | OBO トークン（ヘッダー経由） | —                                             | `x-ms-query-source-authorization` |
 
 ---
