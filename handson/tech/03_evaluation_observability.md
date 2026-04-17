@@ -124,12 +124,23 @@ with (
 
 ### ハンズオンで確認した観測基盤
 
-ハンズオンでは W3C TraceContext（`traceparent`）によりクライアント → APIM → AI Foundry の全区間を 1 本のトレースとして Application Insights に記録しました。
+ハンズオンでは W3C TraceContext（`traceparent`）によりクライアント → APIM → AI Foundry、さらに Foundry IQ が呼び出す OpenAI エンドポイントまでを 1 本のトレースとして Application Insights に記録しました。
 
 ```
-クライアント → APIM → AI Foundry（Foundry Agent / Foundry IQ）
-   OpenTelemetry         W3C 転送          Application Insights 記録
+[クライアント]                                              ✅ 記録
+     │ traceparent を生成・送信
+     ▼
+  [APIM]                                                    ✅ 記録
+     │ traceparent を引き継ぎ・転送
+     ▼
+[AI Foundry]（Foundry Agent / Foundry IQ）                  ✅ 記録
+     │
+     ├─▶ [OpenAI] chat_completion / embedding               ✅ 記録（APIM 経由で traceparent 引き継ぎ）
+     │
+     └─▶ [AI Search]                                        ❌ 記録されない（トレース送信不可）
 ```
+
+AI Search は Application Insights へトレースを送信できないため、Foundry IQ 内部の AI Search 呼び出しはトレース上に記録されません。OpenAI エンドポイント（APIM 経由）への呼び出しのみが同一 trace_id で紐づきます。
 
 各シナリオで記録されるスパン属性は以下の通りです。
 

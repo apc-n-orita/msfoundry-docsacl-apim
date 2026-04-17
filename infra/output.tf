@@ -42,3 +42,7 @@ output "AZURE_OBO_CLIENT_ID" {
 output "MODEL_DEPLOYMENT" {
   value = var.openai_chat.model_name
 }
+
+output "ADLS_ACL_GROUP_ID" {
+  value = azuread_group.adls_acl_group.object_id
+}

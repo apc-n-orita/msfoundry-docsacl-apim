@@ -94,6 +94,7 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_ADLS_ACL_GROUP_ID"></a> [ADLS\_ACL\_GROUP\_ID](#output\_ADLS\_ACL\_GROUP\_ID) | n/a |
 | <a name="output_AZURE_LOCATION"></a> [AZURE\_LOCATION](#output\_AZURE\_LOCATION) | n/a |
 | <a name="output_AZURE_OBO_CLIENT_ID"></a> [AZURE\_OBO\_CLIENT\_ID](#output\_AZURE\_OBO\_CLIENT\_ID) | n/a |
 | <a name="output_AZURE_RESOURCE_GROUP"></a> [AZURE\_RESOURCE\_GROUP](#output\_AZURE\_RESOURCE\_GROUP) | n/a |
