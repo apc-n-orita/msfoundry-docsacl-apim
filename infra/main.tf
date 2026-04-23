@@ -145,8 +145,8 @@ module "ai_search" {
   local_authentication_enabled  = false
   tags                          = local.tags
   log_analytics_workspace_id    = azurerm_log_analytics_workspace.law.id
-  #search_service_sku            = "standard" #サンプルpdfが16mbを超えるため、Standardを使用。インデクシング後、ポータルからBasicにダウングレード可能。(terraformの場合、再作成になるため、注意。)
-  search_service_sku  = "basic"
+  search_service_sku            = "standard" #サンプルpdfが16mbを超えるため、Standardを使用。インデクシング後、ポータルからBasicにダウングレード可能。(terraformの場合、再作成になるため、注意。)
+  #search_service_sku  = "basic"
   semantic_search_sku = "free"
 }
 
