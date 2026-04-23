@@ -43,6 +43,8 @@
 | [azapi_resource.conn_appi](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) | resource |
 | [azapi_resource.conn_foundryiq](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) | resource |
 | [azapi_resource.conn_foundryiq_docsacl](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) | resource |
+| [azapi_resource.grafana_dashboard](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) | resource |
+| [azapi_resource.grafana_dashboard_definition](https://registry.terraform.io/providers/Azure/azapi/latest/docs/resources/resource) | resource |
 | [azuread_application.oauth_app](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/resources/application) | resource |
 | [azuread_application_identifier_uri.entra_app_uri](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/resources/application_identifier_uri) | resource |
 | [azuread_application_permission_scope.user_impersonation](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/resources/application_permission_scope) | resource |
@@ -99,6 +101,7 @@
 | <a name="output_AZURE_OBO_CLIENT_ID"></a> [AZURE\_OBO\_CLIENT\_ID](#output\_AZURE\_OBO\_CLIENT\_ID) | n/a |
 | <a name="output_AZURE_RESOURCE_GROUP"></a> [AZURE\_RESOURCE\_GROUP](#output\_AZURE\_RESOURCE\_GROUP) | n/a |
 | <a name="output_AZURE_TENANT_ID"></a> [AZURE\_TENANT\_ID](#output\_AZURE\_TENANT\_ID) | n/a |
+| <a name="output_GRAFANA_DASHBOARD_NAME"></a> [GRAFANA\_DASHBOARD\_NAME](#output\_GRAFANA\_DASHBOARD\_NAME) | n/a |
 | <a name="output_KB_ACL_MCP_URL"></a> [KB\_ACL\_MCP\_URL](#output\_KB\_ACL\_MCP\_URL) | n/a |
 | <a name="output_MODEL_DEPLOYMENT"></a> [MODEL\_DEPLOYMENT](#output\_MODEL\_DEPLOYMENT) | n/a |
 | <a name="output_OPENAI_ENDPOINT"></a> [OPENAI\_ENDPOINT](#output\_OPENAI\_ENDPOINT) | n/a |

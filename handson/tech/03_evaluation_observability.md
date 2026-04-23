@@ -149,9 +149,41 @@ AI Search は Application Insights へトレースを送信できないため、
 | `user_chat_turn`（シナリオ 1/2） | `gen_ai.prompt`, `tokens.input/, tokens.total`                                  |
 | `user_chat_turn`（シナリオ 3）   | `gen_ai.prompt`, `query_tokens.*`（検索クエリ生成）, `res_tokens.*`（回答生成） |
 
-### Grafana Dashboard（予定）
+### Grafana Dashboard
 
-> **注意**: Azure ポータル上で表示できる **Grafana Dashboard** を追加予定です。
+**Azure Managed Grafana** 互換のダッシュボードを Terraform でデプロイしています。  
+Azure ポータルで **「Grafana を使用したダッシュボード」** を検索すると一覧に表示されます。ダッシュボード名は `azd env get-values | grep GRAFANA_DASHBOARD_NAME` で確認できます。
+
+#### パネル構成
+
+| セクション                                | パネル                             | 内容                                                                                      |
+| ----------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Summary Statistics (Agent)**            | —                                  | エージェント操作のトータル実行数・入出力トークン数・平均応答時間                          |
+| **Summary Statistics (Open AI Endpoint)** | —                                  | APIM 経由 OpenAI エンドポイントの実行数・トークン消費量                                   |
+| **Performance Monitoring (Agent)**        | Agent Response Time Trends         | 応答時間の時系列トレンド（avg / p95 / p99）                                               |
+|                                           | Success Rate                       | 成功率ゲージ（赤: 0–90% / 黄: 90–95% / 緑: 95%+）                                         |
+|                                           | Throughput                         | 単位時間あたりの操作数                                                                    |
+| **Token Usage & Cost Analysis**           | Token Consumption Over Time        | トークン消費の時系列グラフ（Agent / OpenAI Endpoint 別）                                  |
+|                                           | Token Usage by Agent / ClientID    | エージェント別・Managed Identity ClientID（OpenAI Endpoint） 別のトークン分布（ドーナツ） |
+|                                           | Daily Cost Estimation              | 日次コスト試算（モデル単価は KQL クエリ内で調整可、Agent / OpenAI Endpoint 別）           |
+| **Agent Activity (Agent)**                | Agent Performance Summary          | エージェント別の総操作数・平均応答時間・成功率テーブル                                    |
+|                                           | Agent Utilization Heatmap          | エージェント別の時間帯ごとの稼働量（State Timeline）                                      |
+| **Error Analysis (Agent)**                | Error Rate                         | エラー率ゲージ（緑: 0–5% / 黄: 5–10% / 赤: 10%+）                                         |
+|                                           | Error Timeline                     | エラー発生数の時系列バーチャート                                                          |
+|                                           | Recent Errors                      | 直近 20 件の失敗操作一覧（タイムスタンプ・エージェント名・エラー種別）                    |
+| **Detailed Metrics (Agent)**              | Response Time Percentiles by Agent | エージェント別の p50 / p95 / p99 応答時間比較（横棒グラフ）                               |
+| **Select a trace (Agent)**                | —                                  | 操作一覧テーブル。行クリックでトレース ID を選択                                          |
+| **Trace detail (Agent)**                  | —                                  | 選択したトレースの分散トレース可視化（スパン階層・タイミング）                            |
+
+#### フィルター変数
+
+| 変数                          | 説明                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| **Subscription**              | Application Insights のサブスクリプション                                  |
+| **Resource Group**            | Application Insights のリソースグループ                                    |
+| **Application Insights**      | 対象の Application Insights リソース名                                     |
+| **Agent**                     | エージェント名（複数選択・全選択可）                                       |
+| **Managed Identity ClientID** | APIM 経由リクエストのクライアント ID（`UserContext` はユーザー実行を示す） |
 
 ---
 

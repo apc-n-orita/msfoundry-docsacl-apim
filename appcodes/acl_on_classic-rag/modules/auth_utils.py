@@ -58,14 +58,14 @@ def record_tokens_to_span(span, usage, prefix):
     span.set_attribute(f"{prefix}.output", int(completion_tokens or 0))
     span.set_attribute(f"{prefix}.total", int(total_tokens or 0))
     
-    if cached_tokens is not None:
+    if cached_tokens:
         span.set_attribute(f"{prefix}.input.cached", int(cached_tokens))
-    if reasoning_tokens is not None:
+    if reasoning_tokens:
         span.set_attribute(f"{prefix}.output.reasoning", int(reasoning_tokens))
 
     # コンソール出力
     label = "検索クエリ" if prefix == "query_tokens" else "回答生成"
     print(f"\n[{label}トークン統計]")
-    print(f"  入力: {prompt_tokens} (キャッシュ: {cached_tokens or 0})")
-    print(f"  出力: {completion_tokens} (推論: {reasoning_tokens or 0})")
+    print(f"  入力: {prompt_tokens} (キャッシュ: {cached_tokens})")
+    print(f"  出力: {completion_tokens} (推論: {reasoning_tokens})")
     print(f"  合計: {total_tokens}")
