@@ -1,6 +1,6 @@
 locals {
   tags           = { azd-env-name : var.environment_name }
-  sha            = base64encode(sha256("${var.environment_name}${var.location}${data.azurerm_client_config.current.subscription_id}"))
+  sha            = base64encode(sha256("${var.environment_name}${var.location}${var.subscription_id}"))
   resource_token = substr(replace(lower(local.sha), "[^A-Za-z0-9_]", ""), 0, 13)
   apim = {
     sku             = "BasicV2"
@@ -145,8 +145,8 @@ module "ai_search" {
   local_authentication_enabled  = false
   tags                          = local.tags
   log_analytics_workspace_id    = azurerm_log_analytics_workspace.law.id
-  search_service_sku            = "standard"
-  #search_service_sku  = "basic"
+  #search_service_sku            = "standard" #サンプルpdfが16mbを超えるため、Standardを使用。インデクシング後、ポータルからBasicにダウングレード可能。(terraformの場合、再作成になるため、注意。)
+  search_service_sku  = "basic"
   semantic_search_sku = "free"
 }
 
@@ -724,5 +724,38 @@ resource "null_resource" "foundry_agent" {
         -d '${local.agent_payload}'
     EOT
     interpreter = ["/bin/bash", "-c"]
+  }
+}
+
+resource "azapi_resource" "grafana_dashboard" {
+  type                      = "Microsoft.Dashboard/dashboards@2025-09-01-preview"
+  name                      = "AI-dashboard-${substr(local.resource_token, 0, 3)}"
+  location                  = azurerm_resource_group.rg.location
+  parent_id                 = azurerm_resource_group.rg.id
+  schema_validation_enabled = false
+  tags = {
+    GrafanaDashboardTags         = "agent-framework"
+    AzMonGrafanaDashboardId      = "AgentFramework###ver###4"
+    GrafanaDashboardResourceType = "microsoft.insights/components"
+  }
+  body = {
+    properties = {}
+  }
+}
+
+resource "azapi_resource" "grafana_dashboard_definition" {
+  type                      = "Microsoft.Dashboard/dashboards/dashboardDefinitions@2025-09-01-preview"
+  name                      = "default"
+  parent_id                 = azapi_resource.grafana_dashboard.id
+  schema_validation_enabled = false
+  body = {
+    properties = {
+      serializedData = templatefile("./grafanadashb/grafana-dash.tftpl", {
+        subscription_id     = var.subscription_id
+        resource_group_name = azurerm_resource_group.rg.name
+        appinsights_name    = azurerm_application_insights.AI.name
+        dashboard_name      = "AI-dashboard-${substr(local.resource_token, 0, 3)}"
+      })
+    }
   }
 }

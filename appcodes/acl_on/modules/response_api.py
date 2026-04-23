@@ -4,10 +4,15 @@ import httpx
 import unicodedata
 from openai import AzureOpenAI
 from azure.identity import get_bearer_token_provider
+from azure.core.exceptions import HttpResponseError
 from .telemetry_utils import inject_traceparent
 from datetime import datetime, timezone
 from opentelemetry.trace import Status, StatusCode
 from .auth_utils import try_get_usage_tokens
+
+
+def to_halfwidth(s):
+    return unicodedata.normalize('NFKC', s)
 
 
 def create_openai_client(project_endpoint, credential):
@@ -47,9 +52,6 @@ def run_chat_loop(openai_client, http_client, user_token, tracer,
         try:
             print("\n質問を入力してください:")
             user_input = input("ユーザー: ").strip()
-            # 全角英数字・記号を半角に変換（日本語はそのまま）
-            def to_halfwidth(s):
-                return unicodedata.normalize('NFKC', s)
             user_input = to_halfwidth(user_input)
 
             if user_input.lower() in ["exit", "quit", "q"]:
@@ -63,6 +65,7 @@ def run_chat_loop(openai_client, http_client, user_token, tracer,
             with tracer.start_as_current_span("user_chat_turn") as span:
                 span.set_attribute("project_endpoint", project_endpoint)
                 span.set_attribute("model_deployment", model_deployment)
+                span.set_attribute("agent_name", "info-agent-tartaria-acl")
                 span.set_attribute("gen_ai.prompt", user_input)
 
                 mcp_tool = {
@@ -98,13 +101,18 @@ def run_chat_loop(openai_client, http_client, user_token, tracer,
                 try:
                     response = openai_client.responses.create(**request_params)
                 except HttpResponseError as e:
+                    span.set_attribute("error_statuscode", str(e.status_code))
+                    span.set_attribute("error_message", str(e.message))
+                    span.set_attribute("error_type", type(e).__name__)
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
-                    status_code = getattr(e, "status_code", None)
-                    print(f"\n❌ HTTP エラー: {status_code} - {getattr(e, 'message', str(e))}", file=sys.stderr)
+                    print(f"\n❌ HTTP エラー: {e.status_code} - {e.message}", file=sys.stderr)
                     continue
                 except Exception as e:
+                    span.set_attribute("error_message", str(e))
+                    span.set_attribute("error_type", type(e).__name__)
                     span.set_status(Status(StatusCode.ERROR, str(e)))
+                    span.record_exception(e)
                     print(f"\n❌ エラーが発生しました: {type(e).__name__}: {e}", file=sys.stderr)
                     break
 

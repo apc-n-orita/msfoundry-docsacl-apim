@@ -12,6 +12,10 @@ from opentelemetry.trace import Status, StatusCode
 from .telemetry_utils import inject_traceparent
 from .auth_utils import record_tokens_to_span
 
+def to_halfwidth(s):
+    return unicodedata.normalize('NFKC', s)
+
+
 def create_openai_ais_client(openai_endpoint, search_endpoint, index_name, credential):
     """クライアントの初期化"""
     http_client = httpx.Client(event_hooks={"request": [inject_traceparent]})
@@ -63,9 +67,6 @@ def run_chat_loop(openai_client, search_client, user_token, credential, tracer, 
             print("\n質問を入力してください:")
 
             user_input = input("ユーザー: ").strip()
-            # 全角英数字・記号を半角に変換（日本語はそのまま）
-            def to_halfwidth(s):
-                return unicodedata.normalize('NFKC', s)
             user_input = to_halfwidth(user_input)
 
             if user_input.lower() in ["exit", "quit", "q"]:
@@ -77,6 +78,7 @@ def run_chat_loop(openai_client, search_client, user_token, credential, tracer, 
             with tracer.start_as_current_span("user_chat_turn") as span:
                 span.set_attribute("gen_ai.prompt", user_input)
                 span.set_attribute("model_deployment", model_deployment)
+                span.set_attribute("agent_name", "info-agent-tartaria-acl-oldrag")
 
                 try:
                     # 1. 検索クエリの生成 (RAG用キーワード抽出)
@@ -158,10 +160,20 @@ def run_chat_loop(openai_client, search_client, user_token, credential, tracer, 
                     record_tokens_to_span(span, summary_completion.usage, "res_tokens")
 
                 except HttpResponseError as e:
+                    span.set_attribute("error_statuscode", str(e.status_code))
+                    span.set_attribute("error_message", str(e.message))
+                    span.set_attribute("error_type", type(e).__name__)
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
                     print(f"\n❌ APIエラー: {e.status_code} - {e.message}", file=sys.stderr)
                     continue
+                except Exception as e:
+                    span.set_attribute("error_message", str(e))
+                    span.set_attribute("error_type", type(e).__name__)
+                    span.set_status(Status(StatusCode.ERROR, str(e)))
+                    span.record_exception(e)
+                    print(f"\n❌ エラーが発生しました: {type(e).__name__}: {e}", file=sys.stderr)
+                    break
 
         except KeyboardInterrupt:
             print("\nユーザーにより中断されました。")

@@ -46,3 +46,7 @@ output "MODEL_DEPLOYMENT" {
 output "ADLS_ACL_GROUP_ID" {
   value = azuread_group.adls_acl_group.object_id
 }
+
+output "GRAFANA_DASHBOARD_NAME" {
+  value = azapi_resource.grafana_dashboard.name
+}

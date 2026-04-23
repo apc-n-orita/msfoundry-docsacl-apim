@@ -2,7 +2,7 @@
 from .config import validate_env_vars, load_config
 from .auth_utils import exchange_token_for_search, try_get_usage_tokens
 from .telemetry_utils import inject_traceparent, setup_telemetry
-from .response_api import create_openai_client, run_chat_loop
+from .response_api import create_openai_client, run_chat_loop, to_halfwidth
 # __all__ を定義することで、"from modules import *" とした際に読み込まれる対象を明示する
 __all__ = [
     "validate_env_vars",
@@ -12,5 +12,6 @@ __all__ = [
     "inject_traceparent",
     "setup_telemetry",
     "create_openai_client",
-    "run_chat_loop"
+    "run_chat_loop",
+    "to_halfwidth"
 ]
