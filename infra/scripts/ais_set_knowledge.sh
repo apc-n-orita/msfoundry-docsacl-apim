@@ -38,6 +38,86 @@ if [ -z "$search_access_token" ]; then
 fi
 echo "Access token acquired."
 
+fetch_resource_state() {
+  local resource_url="$1"
+  local headers_file
+
+  headers_file=$(mktemp)
+  RESOURCE_HTTP_STATUS=$(curl -s -D "$headers_file" -o /dev/null -w "%{http_code}" \
+    -H "Accept: application/json;odata.metadata=minimal" \
+    -H "Authorization: Bearer ${search_access_token}" \
+    "$resource_url")
+
+  RESOURCE_ETAG=""
+  if [ "$RESOURCE_HTTP_STATUS" = "200" ]; then
+    RESOURCE_ETAG=$(awk 'BEGIN{IGNORECASE=1} /^ETag:[[:space:]]*/ {line=$0; sub(/\r$/, "", line); sub(/^[^:]*:[[:space:]]*/, "", line); print line; exit}' "$headers_file")
+  fi
+
+  rm -f "$headers_file"
+}
+
+put_resource_with_concurrency() {
+  local resource_label="$1"
+  local get_url="$2"
+  local put_url="$3"
+  local request_body="$4"
+  local response_file="$5"
+  local status_code
+  local resource_etag
+  local concurrency_header=()
+
+  echo "Checking if ${resource_label} already exists..."
+  fetch_resource_state "$get_url"
+  status_code="$RESOURCE_HTTP_STATUS"
+  resource_etag="$RESOURCE_ETAG"
+
+  if [ "$status_code" = "200" ]; then
+    if [ -z "$resource_etag" ]; then
+      echo "Error: ${resource_label} exists but ETag could not be retrieved for If-Match." >&2
+      exit 1
+    fi
+    echo "${resource_label} already exists. Updating with If-Match (ETag=${resource_etag})..."
+    concurrency_header=(-H "If-Match: ${resource_etag}")
+  else
+    echo "${resource_label} does not exist (status ${status_code}). Creating with If-None-Match=* (PUT)..."
+    concurrency_header=(-H "If-None-Match: *")
+  fi
+
+  LAST_RESPONSE_HEADERS=$(curl -s -D - -o "$response_file" -X PUT \
+    -H "Accept: application/json;odata.metadata=minimal" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${search_access_token}" \
+    -H "Prefer: return=representation" \
+    "${concurrency_header[@]}" \
+    "$put_url" \
+    --data "${request_body}")
+
+  LAST_HTTP_CODE=$(echo "$LAST_RESPONSE_HEADERS" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
+}
+
+handle_put_result() {
+  local resource_label="$1"
+  local response_file="$2"
+
+  echo "${resource_label} HTTP Response Code: ${LAST_HTTP_CODE}"
+  if [[ "$LAST_HTTP_CODE" != "200" && "$LAST_HTTP_CODE" != "201" ]]; then
+    echo "Failed to create/update ${resource_label}. Full response headers + body:" >&2
+    echo "$LAST_RESPONSE_HEADERS" >&2
+    echo "Body:" >&2
+    cat "$response_file" >&2
+    echo "" >&2
+    echo "Cleaning up ${resource_label} temp file (error case)..." >&2
+    rm -f "$response_file" || echo "Warning: could not remove ${response_file}" >&2
+    exit 1
+  fi
+
+  echo "Success. ${resource_label} JSON response:"
+  cat "$response_file" | sed 's/\r//'
+  echo "${resource_label} provisioning step completed."
+  echo "Cleaning up ${resource_label} temp file..."
+  rm -f "$response_file" || echo "Warning: could not remove ${response_file}" >&2
+}
+
 # ---------------------------------------------
 # Knowledge Source creation/update (via REST)
 # PUT {endpoint}/knowledgesources('{sourceName}')?api-version=2025-11-01-preview
@@ -68,44 +148,9 @@ knowledge_source_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if Knowledge Source '${knowledge_source_name}' already exists..."
-ks_status_code=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/knowledgesources('${knowledge_source_name}')?api-version=${api_version}")
-
-if [ "$ks_status_code" = "200" ]; then
-    echo "Knowledge Source already exists. Updating (PUT)..."
-else
-    echo "Knowledge Source does not exist (status $ks_status_code). Creating (PUT)..."
-fi
-
-ks_response=$(curl -s -D - -o /tmp/knowledge_source_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    -H "Prefer: return=representation" \
-    "https://${search_service_name}.search.windows.net/knowledgesources('${knowledge_source_name}')?api-version=${api_version}" \
-    --data "${knowledge_source_body}")
-
-ks_http_code=$(echo "$ks_response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-
-echo "Knowledge Source HTTP Response Code: ${ks_http_code}"
-if [[ "$ks_http_code" != "200" && "$ks_http_code" != "201" ]]; then
-    echo "Failed to create/update Knowledge Source. Full response headers + body:" >&2
-    echo "$ks_response" >&2
-    echo "Body:" >&2
-    cat /tmp/knowledge_source_resp.json >&2
-    echo "" >&2
-    echo "Cleaning up Knowledge Source temp file (error case)..." >&2
-    rm -f /tmp/knowledge_source_resp.json || echo "Warning: could not remove /tmp/knowledge_source_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Knowledge Source JSON response:"
-cat /tmp/knowledge_source_resp.json | sed 's/\r//'
-
-echo "Knowledge Source provisioning step completed."
-echo "Cleaning up Knowledge Source temp file..."
-rm -f /tmp/knowledge_source_resp.json || echo "Warning: could not remove /tmp/knowledge_source_resp.json" >&2
+ks_url="https://${search_service_name}.search.windows.net/knowledgesources('${knowledge_source_name}')?api-version=${api_version}"
+put_resource_with_concurrency "Knowledge Source '${knowledge_source_name}'" "$ks_url" "$ks_url" "${knowledge_source_body}" "/tmp/knowledge_source_resp.json"
+handle_put_result "Knowledge Source" "/tmp/knowledge_source_resp.json"
 
 # ---------------------------------------------
 # Knowledge Base creation/update (via REST)
@@ -146,43 +191,8 @@ knowledge_base_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if Knowledge Base '${knowledge_base_name}' already exists..."
-kb_status_code=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/knowledgebases('${knowledge_base_name}')?api-version=${api_version}")
-
-if [ "$kb_status_code" = "200" ]; then
-    echo "Knowledge Base already exists. Updating (PUT)..."
-else
-    echo "Knowledge Base does not exist (status $kb_status_code). Creating (PUT)..."
-fi
-
-kb_response=$(curl -s -D - -o /tmp/knowledge_base_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    -H "Prefer: return=representation" \
-    "https://${search_service_name}.search.windows.net/knowledgebases('${knowledge_base_name}')?api-version=${api_version}" \
-    --data "${knowledge_base_body}")
-
-kb_http_code=$(echo "$kb_response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-
-echo "Knowledge Base HTTP Response Code: ${kb_http_code}"
-if [[ "$kb_http_code" != "200" && "$kb_http_code" != "201" ]]; then
-    echo "Failed to create/update Knowledge Base. Full response headers + body:" >&2
-    echo "$kb_response" >&2
-    echo "Body:" >&2
-    cat /tmp/knowledge_base_resp.json >&2
-    echo "" >&2
-    echo "Cleaning up Knowledge Base temp file (error case)..." >&2
-    rm -f /tmp/knowledge_base_resp.json || echo "Warning: could not remove /tmp/knowledge_base_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Knowledge Base JSON response:"
-cat /tmp/knowledge_base_resp.json | sed 's/\r//'
-
-echo "Knowledge Base provisioning step completed."
-echo "Cleaning up Knowledge Base temp file..."
-rm -f /tmp/knowledge_base_resp.json || echo "Warning: could not remove /tmp/knowledge_base_resp.json" >&2
+kb_url="https://${search_service_name}.search.windows.net/knowledgebases('${knowledge_base_name}')?api-version=${api_version}"
+put_resource_with_concurrency "Knowledge Base '${knowledge_base_name}'" "$kb_url" "$kb_url" "${knowledge_base_body}" "/tmp/knowledge_base_resp.json"
+handle_put_result "Knowledge Base" "/tmp/knowledge_base_resp.json"
 
 echo "All knowledge provisioning steps completed successfully."
