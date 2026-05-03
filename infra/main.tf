@@ -649,19 +649,6 @@ resource "null_resource" "provision_search_index" {
     EOT
   }
 
-  # provisioner "local-exec" {
-  #   when        = destroy
-  #   interpreter = ["/bin/bash", "-c"]
-  #   command     = <<EOT
-  #     bash ${path.module}/scripts/ais_delete_index.sh \
-  #       ${self.triggers.search_service_name} \
-  #       ${self.triggers.indexer_name} \
-  #       ${self.triggers.skillset_name} \
-  #       ${self.triggers.index_name} \
-  #       ${self.triggers.datasource_name}
-  #   EOT
-  # }
-
   depends_on = [module.apim_api_openai, module.ai_foundry, azurerm_storage_blob.docs,
   ]
 }
@@ -694,17 +681,6 @@ resource "null_resource" "provision_search_knowledge_acl" {
         ${self.triggers.reasoning_effort}
     EOT
   }
-
-  # provisioner "local-exec" {
-  #   when        = destroy
-  #   interpreter = ["/bin/bash", "-c"]
-  #   command     = <<EOT
-  #     bash ${path.module}/scripts/ais_delete_knowledge.sh \
-  #       ${self.triggers.search_service_name} \
-  #       ${self.triggers.knowledge_base_name} \
-  #       ${self.triggers.knowledge_source_name}
-  #   EOT
-  # }
 }
 
 resource "null_resource" "foundry_agent" {

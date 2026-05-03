@@ -35,8 +35,8 @@ fi
 # ---------------------------------------------
 # Azure AI Search Data Source creation (via REST)
 # Docs references:
-# - Create Data Source REST API: https://learn.microsoft.com/en-us/rest/api/searchservice/create-data-source
-# - API versions: https://learn.microsoft.com/en-us/rest/api/searchservice/search-service-api-versions
+# - Data Sources - Create Or Update (2025-11-01-preview): https://learn.microsoft.com/en-us/rest/api/searchservice/data-sources/create-or-update?view=rest-searchservice-2025-11-01-preview
+# - Data Sources - Get (2025-11-01-preview): https://learn.microsoft.com/en-us/rest/api/searchservice/data-sources/get?view=rest-searchservice-2025-11-01-preview
 # - RBAC (Bearer token instead of api-key): https://learn.microsoft.com/en-us/azure/search/search-security-rbac
 # ---------------------------------------------
 
@@ -50,6 +50,85 @@ if [ -z "$search_access_token" ]; then
     echo "Error: Failed to get search access token. Ensure az login and proper permissions (Azure roles)." >&2
     exit 1
 fi
+
+fetch_resource_state() {
+  local resource_url="$1"
+  local headers_file
+
+  headers_file=$(mktemp)
+  RESOURCE_HTTP_STATUS=$(curl -s -D "$headers_file" -o /dev/null -w "%{http_code}" \
+    -H "Accept: application/json;odata.metadata=minimal" \
+    -H "Authorization: Bearer ${search_access_token}" \
+    "$resource_url")
+
+  RESOURCE_ETAG=""
+  if [ "$RESOURCE_HTTP_STATUS" = "200" ]; then
+    RESOURCE_ETAG=$(awk 'BEGIN{IGNORECASE=1} /^ETag:[[:space:]]*/ {line=$0; sub(/\r$/, "", line); sub(/^[^:]*:[[:space:]]*/, "", line); print line; exit}' "$headers_file")
+  fi
+
+  rm -f "$headers_file"
+}
+
+put_resource_with_concurrency() {
+  local resource_label="$1"
+  local get_url="$2"
+  local put_url="$3"
+  local request_body="$4"
+  local response_file="$5"
+  local status_code
+  local resource_etag
+  local concurrency_header=()
+
+  echo "Checking if ${resource_label} already exists..."
+  fetch_resource_state "$get_url"
+  status_code="$RESOURCE_HTTP_STATUS"
+  resource_etag="$RESOURCE_ETAG"
+
+  if [ "$status_code" = "200" ]; then
+    if [ -z "$resource_etag" ]; then
+      echo "Error: ${resource_label} exists but ETag could not be retrieved for If-Match." >&2
+      exit 1
+    fi
+    echo "${resource_label} already exists. Updating with If-Match (ETag=${resource_etag})..."
+    concurrency_header=(-H "If-Match: ${resource_etag}")
+  else
+    echo "${resource_label} does not exist (status ${status_code}). Creating with If-None-Match=* (PUT)..."
+    concurrency_header=(-H "If-None-Match: *")
+  fi
+
+  LAST_RESPONSE_HEADERS=$(curl -s -D - -o "$response_file" -X PUT \
+    -H "Accept: application/json;odata.metadata=minimal" \
+    -H "Content-Type: application/json" \
+    -H "Prefer: return=representation" \
+    "${concurrency_header[@]}" \
+    -H "Authorization: Bearer ${search_access_token}" \
+    "$put_url" \
+    --data "${request_body}")
+
+  LAST_HTTP_CODE=$(echo "$LAST_RESPONSE_HEADERS" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
+}
+
+handle_put_result() {
+  local resource_label="$1"
+  local response_file="$2"
+
+  echo "${resource_label} HTTP Response Code: ${LAST_HTTP_CODE}"
+  if [[ "$LAST_HTTP_CODE" != "200" && "$LAST_HTTP_CODE" != "201" ]]; then
+    echo "Failed to create/update ${resource_label}. Full response headers + body:" >&2
+    echo "$LAST_RESPONSE_HEADERS" >&2
+    echo "Body:" >&2
+    cat "$response_file" >&2
+    echo "Cleaning up ${resource_label} temp file (error case)..." >&2
+    rm -f "$response_file" || echo "Warning: could not remove ${response_file}" >&2
+    exit 1
+  fi
+
+  echo "Success. ${resource_label} response JSON:"
+  cat "$response_file" | sed 's/\r//'
+  echo "${resource_label} provisioning step completed."
+  echo "Cleaning up ${resource_label} temp file..."
+  rm -f "$response_file" || echo "Warning: could not remove ${response_file}" >&2
+}
 
 storage_account_resource_id="/subscriptions/${subscription_id}/resourceGroups/${resource_group}/providers/Microsoft.Storage/storageAccounts/${storage_account_name}"
 connection_string="ResourceId=${storage_account_resource_id};"  # Managed identity style connection string
@@ -72,42 +151,9 @@ datasource_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if data source '${datasource_name}' already exists..."
-status_code=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/datasources('${datasource_name}')?api-version=${api_version}")
-
-if [ "$status_code" = "200" ]; then
-    echo "Data source already exists. Updating (PUT)..."
-else
-    echo "Data source does not exist (status $status_code). Creating (PUT)..."
-fi
-
-response=$(curl -s -D - -o /tmp/datasource_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/datasources('${datasource_name}')?api-version=${api_version}" \
-    --data "${datasource_body}")
-
-http_resp_code=$(echo "$response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-
-echo "HTTP Response Code: ${http_resp_code}";
-if [[ "$http_resp_code" != "200" && "$http_resp_code" != "201" ]]; then
-    echo "Failed to create/update datasource. Full response headers + body:" >&2
-    echo "$response" >&2
-    echo "Body:" >&2
-    cat /tmp/datasource_resp.json >&2
-    echo "Cleaning up datasource temp file (error case)..." >&2
-    rm -f /tmp/datasource_resp.json || echo "Warning: could not remove /tmp/datasource_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Datasource JSON response:"
-cat /tmp/datasource_resp.json | sed 's/\r//'
-
-echo "Done." 
-echo "Cleaning up datasource temp file..."
-rm -f /tmp/datasource_resp.json || echo "Warning: could not remove /tmp/datasource_resp.json" >&2
+datasource_url="https://${search_service_name}.search.windows.net/datasources('${datasource_name}')?api-version=${api_version}"
+put_resource_with_concurrency "datasource '${datasource_name}'" "$datasource_url" "$datasource_url" "${datasource_body}" "/tmp/datasource_resp.json"
+handle_put_result "datasource" "/tmp/datasource_resp.json"
 
 # ---------------------------------------------
 # Azure AI Search Index creation/update (via REST)
@@ -197,41 +243,10 @@ index_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if index '${index_name}' exists..."
-index_status=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/indexes('${index_name}')?api-version=${api_version}")
-
-if [ "$index_status" = "200" ]; then
-    echo "Index exists. Updating (PUT)..."
-else
-    echo "Index not found (status $index_status). Creating (PUT)..."
-fi
-
-index_response=$(curl -s -D - -o /tmp/index_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/indexes('${index_name}')?allowIndexDowntime=true&api-version=${api_version}" \
-    --data "${index_body}")
-
-index_http_code=$(echo "$index_response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-echo "Index HTTP Response Code: ${index_http_code}"
-if [[ "$index_http_code" != "200" && "$index_http_code" != "201" ]]; then
-    echo "Failed to create/update index. Headers + body:" >&2
-    echo "$index_response" >&2
-    echo "Body:" >&2
-    cat /tmp/index_resp.json >&2
-    echo "Cleaning up index temp file (error case)..." >&2
-    rm -f /tmp/index_resp.json || echo "Warning: could not remove /tmp/index_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Index response JSON:"
-cat /tmp/index_resp.json | sed 's/\r//'
-
-echo "Index provisioning step completed."
-echo "Cleaning up index temp file..."
-rm -f /tmp/index_resp.json || echo "Warning: could not remove /tmp/index_resp.json" >&2
+index_get_url="https://${search_service_name}.search.windows.net/indexes('${index_name}')?api-version=${api_version}"
+index_put_url="https://${search_service_name}.search.windows.net/indexes('${index_name}')?allowIndexDowntime=true&api-version=${api_version}"
+put_resource_with_concurrency "index '${index_name}'" "$index_get_url" "$index_put_url" "${index_body}" "/tmp/index_resp.json"
+handle_put_result "index" "/tmp/index_resp.json"
 
 # ---------------------------------------------
 # Azure AI Search Skillset creation/update (via REST)
@@ -295,41 +310,9 @@ skillset_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if skillset '${skillset_name}' exists..."
-skillset_status=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/skillsets('${skillset_name}')?api-version=${api_version}")
-
-if [ "$skillset_status" = "200" ]; then
-    echo "Skillset exists. Updating (PUT)..."
-else
-    echo "Skillset not found (status $skillset_status). Creating (PUT)..."
-fi
-
-skillset_response=$(curl -s -D - -o /tmp/skillset_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/skillsets('${skillset_name}')?api-version=${api_version}" \
-    --data "${skillset_body}")
-
-skillset_http_code=$(echo "$skillset_response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-echo "Skillset HTTP Response Code: ${skillset_http_code}"
-if [[ "$skillset_http_code" != "200" && "$skillset_http_code" != "201" ]]; then
-    echo "Failed to create/update skillset. Headers + body:" >&2
-    echo "$skillset_response" >&2
-    echo "Body:" >&2
-    cat /tmp/skillset_resp.json >&2
-    echo "Cleaning up skillset temp file (error case)..." >&2
-    rm -f /tmp/skillset_resp.json || echo "Warning: could not remove /tmp/skillset_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Skillset response JSON:"
-cat /tmp/skillset_resp.json | sed 's/\r//'
-
-echo "Skillset provisioning step completed."
-echo "Cleaning up skillset temp file..."
-rm -f /tmp/skillset_resp.json || echo "Warning: could not remove /tmp/skillset_resp.json" >&2
+skillset_url="https://${search_service_name}.search.windows.net/skillsets('${skillset_name}')?api-version=${api_version}"
+put_resource_with_concurrency "skillset '${skillset_name}'" "$skillset_url" "$skillset_url" "${skillset_body}" "/tmp/skillset_resp.json"
+handle_put_result "skillset" "/tmp/skillset_resp.json"
 
 # ---------------------------------------------
 # Azure AI Search Indexer creation/update (via REST)
@@ -371,38 +354,6 @@ indexer_body=$(cat <<EOF
 EOF
 )
 
-echo "Checking if indexer '${indexer_name}' exists..."
-indexer_status=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/indexers('${indexer_name}')?api-version=${api_version}")
-
-if [ "$indexer_status" = "200" ]; then
-    echo "Indexer exists. Updating (PUT)..."
-else
-    echo "Indexer not found (status $indexer_status). Creating (PUT)..."
-fi
-
-indexer_response=$(curl -s -D - -o /tmp/indexer_resp.json -X PUT \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer ${search_access_token}" \
-    "https://${search_service_name}.search.windows.net/indexers('${indexer_name}')?api-version=${api_version}" \
-    --data "${indexer_body}")
-
-indexer_http_code=$(echo "$indexer_response" | grep -E "^HTTP/" | tail -1 | awk '{print $2}')
-echo "Indexer HTTP Response Code: ${indexer_http_code}"
-if [[ "$indexer_http_code" != "200" && "$indexer_http_code" != "201" ]]; then
-    echo "Failed to create/update indexer. Headers + body:" >&2
-    echo "$indexer_response" >&2
-    echo "Body:" >&2
-    cat /tmp/indexer_resp.json >&2
-    echo "Cleaning up indexer temp file (error case)..." >&2
-    rm -f /tmp/indexer_resp.json || echo "Warning: could not remove /tmp/indexer_resp.json" >&2
-    exit 1
-fi
-
-echo "Success. Indexer response JSON:"
-cat /tmp/indexer_resp.json | sed 's/\r//'
-
-echo "Indexer provisioning step completed."
-echo "Cleaning up indexer temp file..."
-rm -f /tmp/indexer_resp.json || echo "Warning: could not remove /tmp/indexer_resp.json" >&2
+indexer_url="https://${search_service_name}.search.windows.net/indexers('${indexer_name}')?api-version=${api_version}"
+put_resource_with_concurrency "indexer '${indexer_name}'" "$indexer_url" "$indexer_url" "${indexer_body}" "/tmp/indexer_resp.json"
+handle_put_result "indexer" "/tmp/indexer_resp.json"
