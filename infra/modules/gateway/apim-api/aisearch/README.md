@@ -36,6 +36,7 @@
 | <a name="input_apim_gateway_url"></a> [apim\_gateway\_url](#input\_apim\_gateway\_url) | n/a | `string` | n/a | yes |
 | <a name="input_apim_principal_id"></a> [apim\_principal\_id](#input\_apim\_principal\_id) | n/a | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | n/a | `any` | n/a | yes |
+| <a name="input_diagnostic_sampling_percentage"></a> [diagnostic\_sampling\_percentage](#input\_diagnostic\_sampling\_percentage) | APIM診断のサンプリング率（0.0 〜 100.0）。本番環境では 20.0 〜 50.0 を推奨。 | `number` | `100` | no |
 
 ## Outputs
 
