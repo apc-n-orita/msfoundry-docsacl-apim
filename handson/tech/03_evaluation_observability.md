@@ -126,9 +126,11 @@ with (
 
 ハンズオンでは W3C TraceContext（`traceparent`）によりクライアント → APIM → AI Foundry、さらに Foundry IQ が呼び出す OpenAI エンドポイントまでを 1 本のトレースとして Application Insights に記録しました。
 
+クライアント側では **OpenTelemetry の標準 propagator** (`opentelemetry.propagate.inject()`) を使用して TraceContext をリクエストヘッダーに注入しています。これにより、sampled flag（トレースフラグ）が親スパンの状態に基づいて正しく設定され、W3C TraceContext 仕様に完全準拠した実装が保証されます。
+
 ```
 [クライアント]                                              ✅ 記録
-     │ traceparent を生成・送信
+     │ traceparent を生成・送信（OpenTelemetry propagator 使用）
      ▼
   [APIM]                                                    ✅ 記録
      │ traceparent を引き継ぎ・転送
@@ -148,6 +150,18 @@ AI Search は Application Insights へトレースを送信できないため、
 | -------------------------------- | ------------------------------------------------------------------------------- |
 | `user_chat_turn`（シナリオ 1/2） | `gen_ai.prompt`, `tokens.input/, tokens.total`                                  |
 | `user_chat_turn`（シナリオ 3）   | `gen_ai.prompt`, `query_tokens.*`（検索クエリ生成）, `res_tokens.*`（回答生成） |
+
+### 本番運用のためのトレースサンプリング
+
+**現在の設定:**
+
+本プロジェクトでは、**Azure Monitor OpenTelemetry Distro のデフォルト設定**（RateLimitedSampler, 5.0 traces/second）を使用しています。これは、低トラフィック時はほぼ全量記録し、高トラフィック時は自動的にレート制限される動的な仕組みです。
+
+**本番環境でのサンプリング設定:**
+
+本番環境では、トラフィック量やコスト要件に応じてサンプリング設定の調整が必要になる場合があります。以下のトピックについて、詳細なガイドを用意しています：
+
+**📘 詳細ガイド:** [分散トレース サンプリング実装ガイド](../../knowleage/Distributed_Tracing_Sampling_Guide.md)
 
 ### Grafana Dashboard
 
