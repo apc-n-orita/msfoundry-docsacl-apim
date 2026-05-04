@@ -46,6 +46,7 @@
 | <a name="input_foundry_backend_ids"></a> [foundry\_backend\_ids](#input\_foundry\_backend\_ids) | Set of Foundry backend resource IDs for role assignment scope | `list(string)` | n/a | yes |
 | <a name="input_foundry_backend_names"></a> [foundry\_backend\_names](#input\_foundry\_backend\_names) | List of Foundry backend names (e.g. ['aif-env-001', 'aif-env-002']) | `list(string)` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | n/a | `any` | n/a | yes |
+| <a name="input_diagnostic_sampling_percentage"></a> [diagnostic\_sampling\_percentage](#input\_diagnostic\_sampling\_percentage) | APIM診断のサンプリング率（0.0 〜 100.0）。本番環境では 20.0 〜 50.0 を推奨。 | `number` | `100` | no |
 | <a name="input_tpm_limit_token"></a> [tpm\_limit\_token](#input\_tpm\_limit\_token) | Tokens per minute limit | `number` | `30000` | no |
 
 ## Outputs

@@ -189,18 +189,19 @@ module "apim" {
 module "apim_api_foundry_agent" {
   source = "./modules/gateway/apim-api/foundry-agent"
 
-  resource_group_name      = azurerm_resource_group.rg.name
-  api_management_name      = module.apim.APIM_SERVICE_NAME
-  foundry_backend_names    = [for k, v in module.ai_foundry : v.name]
-  foundry_backend_ids      = [for k, v in module.ai_foundry : v.ai_foundry_id]
-  entra_app_tenant_id      = data.azurerm_client_config.current.tenant_id
-  entra_app_group_id       = azuread_group.adls_acl_group.object_id
-  ai_model_deploymentname  = var.openai_chat.model_name
-  tpm_limit_token          = var.tpm_limit_token
-  api_management_logger_id = module.apim.API_MANAGEMENT_LOGGER_ID
-  api_management_id        = module.apim.APIM_SERVICE_ID
-  apim_gateway_url         = module.apim.gateway_url
-  apim_principal_id        = module.apim.APIM_MANAGED_IDENTITY_PRINCIPAL_ID
+  resource_group_name            = azurerm_resource_group.rg.name
+  api_management_name            = module.apim.APIM_SERVICE_NAME
+  foundry_backend_names          = [for k, v in module.ai_foundry : v.name]
+  foundry_backend_ids            = [for k, v in module.ai_foundry : v.ai_foundry_id]
+  entra_app_tenant_id            = data.azurerm_client_config.current.tenant_id
+  entra_app_group_id             = azuread_group.adls_acl_group.object_id
+  ai_model_deploymentname        = var.openai_chat.model_name
+  tpm_limit_token                = var.tpm_limit_token
+  api_management_logger_id       = module.apim.API_MANAGEMENT_LOGGER_ID
+  api_management_id              = module.apim.APIM_SERVICE_ID
+  apim_gateway_url               = module.apim.gateway_url
+  apim_principal_id              = module.apim.APIM_MANAGED_IDENTITY_PRINCIPAL_ID
+  diagnostic_sampling_percentage = 100.0
 }
 
 # AI SearchのマネージドIDからアプリケーションID(client_id)を取得
@@ -211,29 +212,31 @@ data "azuread_service_principal" "ai_search" {
 module "apim_api_openai" {
   source = "./modules/gateway/apim-api/openai"
 
-  resource_group_name      = azurerm_resource_group.rg.name
-  api_management_name      = module.apim.APIM_SERVICE_NAME
-  foundry_backend_names    = [for k, v in module.ai_foundry : v.name]
-  foundry_backend_ids      = [for k, v in module.ai_foundry : v.ai_foundry_id]
-  ais_mi_client_id         = data.azuread_service_principal.ai_search.client_id
-  api_management_logger_id = module.apim.API_MANAGEMENT_LOGGER_ID
-  api_management_id        = module.apim.APIM_SERVICE_ID
-  apim_gateway_url         = module.apim.gateway_url
-  apim_principal_id        = module.apim.APIM_MANAGED_IDENTITY_PRINCIPAL_ID
-  depends_on               = [module.apim_api_foundry_agent]
+  resource_group_name            = azurerm_resource_group.rg.name
+  api_management_name            = module.apim.APIM_SERVICE_NAME
+  foundry_backend_names          = [for k, v in module.ai_foundry : v.name]
+  foundry_backend_ids            = [for k, v in module.ai_foundry : v.ai_foundry_id]
+  ais_mi_client_id               = data.azuread_service_principal.ai_search.client_id
+  api_management_logger_id       = module.apim.API_MANAGEMENT_LOGGER_ID
+  api_management_id              = module.apim.APIM_SERVICE_ID
+  apim_gateway_url               = module.apim.gateway_url
+  apim_principal_id              = module.apim.APIM_MANAGED_IDENTITY_PRINCIPAL_ID
+  diagnostic_sampling_percentage = 100.0
+  depends_on                     = [module.apim_api_foundry_agent]
 }
 
 module "apim_api_cognitiveservices" {
   source = "./modules/gateway/apim-api/cognitiveservices"
 
-  resource_group_name      = azurerm_resource_group.rg.name
-  api_management_name      = module.apim.APIM_SERVICE_NAME
-  foundry_backend_names    = [for k, v in module.ai_foundry : v.name]
-  foundry_backend_ids      = [for k, v in module.ai_foundry : v.ai_foundry_id]
-  api_management_logger_id = module.apim.API_MANAGEMENT_LOGGER_ID
-  api_management_id        = module.apim.APIM_SERVICE_ID
-  apim_gateway_url         = module.apim.gateway_url
-  depends_on               = [module.apim_api_foundry_agent]
+  resource_group_name            = azurerm_resource_group.rg.name
+  api_management_name            = module.apim.APIM_SERVICE_NAME
+  foundry_backend_names          = [for k, v in module.ai_foundry : v.name]
+  foundry_backend_ids            = [for k, v in module.ai_foundry : v.ai_foundry_id]
+  api_management_logger_id       = module.apim.API_MANAGEMENT_LOGGER_ID
+  api_management_id              = module.apim.APIM_SERVICE_ID
+  apim_gateway_url               = module.apim.gateway_url
+  diagnostic_sampling_percentage = 100.0
+  depends_on                     = [module.apim_api_foundry_agent]
 }
 
 

@@ -130,7 +130,7 @@ resource "azurerm_api_management_api_diagnostic" "cognitiveservices" {
   api_management_name       = var.api_management_name
   resource_group_name       = var.resource_group_name
   api_management_logger_id  = var.api_management_logger_id
-  sampling_percentage       = 100.0
+  sampling_percentage       = var.diagnostic_sampling_percentage
   always_log_errors         = true
   log_client_ip             = true
   verbosity                 = "information"
