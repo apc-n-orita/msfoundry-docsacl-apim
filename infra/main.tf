@@ -222,6 +222,7 @@ module "apim_api_openai" {
   apim_gateway_url               = module.apim.gateway_url
   apim_principal_id              = module.apim.APIM_MANAGED_IDENTITY_PRINCIPAL_ID
   diagnostic_sampling_percentage = 100.0
+  token_limit                    = var.tpm_limit_token
   depends_on                     = [module.apim_api_foundry_agent]
 }
 

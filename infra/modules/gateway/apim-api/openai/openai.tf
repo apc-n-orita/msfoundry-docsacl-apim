@@ -147,6 +147,7 @@ resource "azurerm_api_management_api_operation_policy" "openai_chat_operation" {
   xml_content = templatefile("${path.module}/files/policy/aoai_operation_v2.xml", {
     AIS-MI-CLIENT-ID  = azurerm_api_management_named_value.ais-mi-client-id.name
     OpenAIBackendPool = azurerm_api_management_named_value.openai_backend_pool.name
+    TokenLimit        = var.token_limit
   })
 }
 
@@ -158,6 +159,7 @@ resource "azurerm_api_management_api_operation_policy" "openai_embedd_opration" 
   xml_content = templatefile("${path.module}/files/policy/aoai_operation_v2.xml", {
     AIS-MI-CLIENT-ID  = azurerm_api_management_named_value.ais-mi-client-id.name
     OpenAIBackendPool = azurerm_api_management_named_value.openai_backend_pool.name
+    TokenLimit        = var.token_limit
   })
 }
 

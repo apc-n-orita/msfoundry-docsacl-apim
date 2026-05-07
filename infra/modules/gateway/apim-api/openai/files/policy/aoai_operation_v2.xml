@@ -8,6 +8,11 @@
         <set-variable name="allowedClientIds" value="{{AIS-MI-CLIENT-ID}}" />
         <set-variable name="allowedGroupIds" value="{{EntraIDGroup}}" />
         <set-variable name="currentAppId" value="@(((Jwt)context.Variables["jwt"]).Claims.GetValueOrDefault("appid", ""))" />
+        <set-variable name="deploymentId" value="@{
+            var path = context.Request.Url.Path;
+            var match = Regex.Match(path, @"/deployments/([^/]+)/");
+            return match.Success ? match.Groups[1].Value : "unknown";
+        }" />
         <choose>
             <when condition="@{
                 var jwt = (Jwt)context.Variables["jwt"];
@@ -35,6 +40,19 @@
                 </return-response>
             </when>
         </choose>
+        <set-backend-service id="apim-generated-policy" backend-id="{{OpenAIBackendPool}}" />
+        
+        <!-- Apply token limit ONLY when currentAppId is NOT AIS-MI-CLIENT-ID -->
+        <choose>
+            <when condition="@{
+                string currentAppId = (string)context.Variables["currentAppId"];
+                string aisClientId = "{{AIS-MI-CLIENT-ID}}";
+                return currentAppId != aisClientId;
+            }">
+                <llm-token-limit counter-key="@((string)context.Variables["deploymentId"])" tokens-per-minute="${TokenLimit}" estimate-prompt-tokens="false" remaining-tokens-variable-name="remainingTokens" />
+            </when>
+        </choose>
+        
         <llm-emit-token-metric namespace="aif-aisearch">
             <dimension name="Operation ID" />
             <dimension name="Client ID" value="@((string)context.Variables["currentAppId"])" />
@@ -47,7 +65,6 @@
                 return allowedClients.Contains((string)context.Variables["currentAppId"]) ? "Internal" : context.Request.IpAddress;
             }" />
         </llm-emit-token-metric>
-        <set-backend-service id="apim-generated-policy" backend-id="{{OpenAIBackendPool}}" />
     </inbound>
     <backend>
         <base />
