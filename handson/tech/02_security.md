@@ -169,6 +169,10 @@ Azure AI Foundry の **Guardrails**（旧 Content Safety / Guardrails & Controls
 
 Foundry ポータルの左ナビから **Guardrails → Create guardrail** でリスク・介入ポイント・アクション（Annotate / Annotate and block）を選択し、モデルデプロイまたはエージェントに割り当てます。
 
+#### コードベースでのセキュリティ制御（Agent Framework Middleware）
+
+独自の LangChain/LangGraph アプリケーションでは、**Agent Framework Middleware** を使用してクライアントサイドでセキュリティ制御を実装できます。
+
 ```python
 # Agent Framework Middleware でプロンプトシールドを組み込む例
 from langchain_azure_ai.agents.middleware import AzurePromptShieldMiddleware
@@ -180,6 +184,24 @@ agent = create_agent(
     ],
 )
 ```
+
+**ガードレール（Foundry ポータル）との使い分け：**
+
+| 観点           | Foundry ガードレール              | Agent Framework Middleware           |
+| -------------- | --------------------------------- | ------------------------------------ |
+| 設定場所       | Foundry ポータル（GUI）           | Python コード                        |
+| 適用対象       | Foundry 経由のモデル/エージェント | LangChain/LangGraph アプリケーション |
+| 適用タイミング | サーバーサイド（Foundry 内）      | クライアントサイド（アプリ内）       |
+| 使用シーン     | 組織全体で統一ポリシーを適用      | エージェントごとに細かい制御         |
+| 動作制御       | Annotate / Annotate and block     | `exit_behavior` で柔軟に制御可能     |
+
+**exit_behavior の選択肢：**
+
+- `"error"` — 検出時に `ContentSafetyViolationError` 例外を送出
+- `"continue"` — 検出してもリクエストを続行し、メッセージにアノテーションを追加
+- `"replace"` — 検出されたコンテンツを削除して置換（Content Moderation のみ）
+
+詳細は [LangChain Middleware 公式ドキュメント](https://learn.microsoft.com/azure/foundry/how-to/develop/langchain-middleware) を参照してください。
 
 ### Foundry ガードレール vs Azure Language Service PII 検出
 
