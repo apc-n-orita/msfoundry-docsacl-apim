@@ -134,7 +134,11 @@ Project: https://...
 >
 > 1. ADLS Gen2 のルートコンテナに `adls-acl-group` の通過権限 (`--x`) が、`Tartarian/*` ディレクトリ配下は再帰的に読み取り権限 (`r-x`) が付与されている
 > 2. AI Search インデクサーがこの ADLS Gen2 の ACL 情報を `GroupIds` フィールドとしてインデックスに格納する
-> 3. リクエスト時に OBO トークンをヘッダーに付与することで、AI Search がトークン内のグループ ID と `GroupIds` を照合し、一致したドキュメントのみ返す
+> 3. リクエスト時に OBO トークンをヘッダー (`x-ms-query-source-authorization`) に付与すると、AI Search が **Microsoft Graph API を呼び出してユーザーのグループメンバーシップを取得**し、それをインデックス内の `GroupIds` と照合して、一致したドキュメントのみ返す
+
+> **⚠️ 本番環境での注意事項**
+>
+> ハンズオンでは検証・デバッグのため ACL フィールド (`UserIds`, `GroupIds`, `RbacScope`) の `retrievable` を `true` に設定していますが、**本番環境では `false` にすることを推奨します**。
 
 ### Step 5: シナリオ 1 との比較
 

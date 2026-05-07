@@ -137,6 +137,10 @@ security_filter = "GroupIds/any(g: search.in(g, '<adls-acl-group-id>'))"
 security_filter = "GroupIds/any(g: g eq 'everyone')"
 ```
 
+> **⚠️ 本番環境での注意事項**
+>
+> ハンズオンでは検証・デバッグのため ACL フィールド (`UserIds`, `GroupIds`, `RbacScope`) の `retrievable` を `true` に設定していますが、**本番環境では `false` にすることを推奨します**。
+
 ### Step 5: シナリオ 2 との比較
 
 同じ質問で比較すると、ACL の結果は同じですがアーキテクチャが異なります。
@@ -157,20 +161,20 @@ security_filter = "GroupIds/any(g: g eq 'everyone')"
 
 `knowledge-classic-rag-session` > `user_chat_turn` スパンには以下のカスタム属性が記録されます。
 
-| 属性名 | 内容 |
-|---|---|
-| `model_deployment` | 使用するモデルのデプロイ名 |
-| `gen_ai.prompt` | ユーザーの入力テキスト |
-| `query_tokens.input` | キーワード抽出の入力トークン数 |
-| `query_tokens.output` | キーワード抽出の出力トークン数 |
-| `query_tokens.total` | キーワード抽出の合計トークン数 |
-| `query_tokens.input.cached` | キーワード抽出のキャッシュ済み入力トークン数 |
-| `query_tokens.output.reasoning` | キーワード抽出の推論トークン数 |
-| `res_tokens.input` | 回答生成の入力トークン数 |
-| `res_tokens.output` | 回答生成の出力トークン数 |
-| `res_tokens.total` | 回答生成の合計トークン数 |
-| `res_tokens.input.cached` | 回答生成のキャッシュ済み入力トークン数 |
-| `res_tokens.output.reasoning` | 回答生成の推論トークン数 |
+| 属性名                          | 内容                                         |
+| ------------------------------- | -------------------------------------------- |
+| `model_deployment`              | 使用するモデルのデプロイ名                   |
+| `gen_ai.prompt`                 | ユーザーの入力テキスト                       |
+| `query_tokens.input`            | キーワード抽出の入力トークン数               |
+| `query_tokens.output`           | キーワード抽出の出力トークン数               |
+| `query_tokens.total`            | キーワード抽出の合計トークン数               |
+| `query_tokens.input.cached`     | キーワード抽出のキャッシュ済み入力トークン数 |
+| `query_tokens.output.reasoning` | キーワード抽出の推論トークン数               |
+| `res_tokens.input`              | 回答生成の入力トークン数                     |
+| `res_tokens.output`             | 回答生成の出力トークン数                     |
+| `res_tokens.total`              | 回答生成の合計トークン数                     |
+| `res_tokens.input.cached`       | 回答生成のキャッシュ済み入力トークン数       |
+| `res_tokens.output.reasoning`   | 回答生成の推論トークン数                     |
 
 ### Step 7: 終了する
 

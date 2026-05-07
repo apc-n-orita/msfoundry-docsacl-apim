@@ -44,3 +44,7 @@ variable "diagnostic_sampling_percentage" {
     error_message = "diagnostic_sampling_percentage must be between 0.0 and 100.0"
   }
 }
+variable "token_limit" {
+  description = "Tokens per minute limit for OpenAI API (used in llm-token-limit policy)"
+  type        = number
+}

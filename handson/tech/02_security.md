@@ -48,13 +48,60 @@ OpenAI エンドポイント ([aoai_operation_v2.xml](../../infra/modules/gatewa
 
 カウンターキーに **プロダクト ID × デプロイ名** を使用しているため、製品（チーム・プロジェクト）単位でトークン使用量を分離管理できます。`main.tfvars.json` の `tpm_limit_token` で TPM 上限を設定します。
 
-> **なぜ OpenAI エンドポイントに `llm-token-limit` を設定しないのか**  
-> Foundry IQ のエージェンティック リトリーバルは、クエリ受信時に内部で Azure OpenAI を呼び出し、複合クエリをサブクエリに分解（クエリプランニング）したり、回答合成（Answer Synthesis）を行います。この内部 LLM 呼び出しも OpenAI エンドポイントを経由するため、OpenAI 側に `llm-token-limit` を設定するとエージェンティック リトリーバルのトークン消費がカウントされ、**検索パイプライン自体がレート制限に引っかかる**おそれがあります。そのため、ユーザーリクエストが通過する Foundry Agent エンドポイント側にのみトークン制御を適用しています。
->
-> | エンドポイント                       | `llm-token-limit` | 理由                                                                        |
-> | ------------------------------------ | ----------------- | --------------------------------------------------------------------------- |
-> | Foundry Agent API (`/foundryagent/`) | ✅ 適用           | ユーザーリクエスト単位で TPM 制御                                           |
-> | OpenAI API (`/openai/`)              | ❌ 適用しない     | Foundry IQ エージェンティック リトリーバルの内部 LLM 呼び出しを妨げないため |
+#### OpenAI エンドポイントのトークン制御
+
+**オペレーションポリシー** ([aoai_operation_v2.xml](../../infra/modules/gateway/apim-api/openai/files/policy/aoai_operation_v2.xml)) では、**AI Search マネージド ID からのアクセスを除外**した上で、`llm-token-limit` によるトークン制御が実装されています。
+
+```xml
+<!-- currentAppId が AIS-MI-CLIENT-ID と一致しない場合にのみトークン制限を適用 -->
+<choose>
+    <when condition="@{
+        string currentAppId = (string)context.Variables["currentAppId"];
+        string aisClientId = "{{AIS-MI-CLIENT-ID}}";
+        return currentAppId != aisClientId;
+    }">
+        <llm-token-limit
+            counter-key="@((string)context.Variables["deploymentId"])"
+            tokens-per-minute="${TokenLimit}"
+            estimate-prompt-tokens="false"
+            remaining-tokens-variable-name="remainingTokens" />
+    </when>
+</choose>
+```
+
+##### 設計の理由
+
+Foundry IQ のエージェンティック リトリーバルは、クエリ受信時に内部で Azure OpenAI を呼び出し、複合クエリをサブクエリに分解（クエリプランニング）したり、回答合成（Answer Synthesis）を行います。この**内部 LLM 呼び出しは AI Search のマネージド ID** を使って OpenAI エンドポイントを経由します。
+
+もし AI Search からのアクセスにもトークン制限を適用すると、エージェンティック リトリーバルの検索パイプライン自体がレート制限に引っかかるおそれがあります。そのため、以下のような設計になっています。
+
+| アクセス元                                                                | `llm-token-limit` | 理由                                                                |
+| ------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------- |
+| **ユーザーコンテキスト**（一般ユーザー）と**AI Search マネージド ID以外** | ✅ 適用           | デプロイメント単位で TPM 制限（`counter-key=deploymentId`）         |
+| **AI Search マネージド ID**                                               | ❌ 適用しない     | Foundry IQ エージェンティック リトリーバルの内部 LLM 呼び出しを保護 |
+
+##### counter-key の選択
+
+OpenAI エンドポイントでは **`deploymentId`（モデルデプロイメント名）** を counter-key に使用しています。これにより、以下のメリットがあります：
+
+- **モデル単位での制限**: `gpt-4`, `text-embedding-3-small` など、デプロイメントごとに独立したトークンカウンターを持つ
+- **リクエストパスからの自動抽出**: `/openai/deployments/{deployment-id}/chat/completions` のパスから正規表現で効率的に取得
+
+```csharp
+// deploymentId の取得（正規表現による抽出）
+var path = context.Request.Url.Path;
+var match = Regex.Match(path, @"/deployments/([^/]+)/");
+return match.Success ? match.Groups[1].Value : "unknown";
+```
+
+##### エンドポイント比較
+
+| エンドポイント                       | `llm-token-limit` | counter-key                        | 対象                                                       |
+| ------------------------------------ | ----------------- | ---------------------------------- | ---------------------------------------------------------- |
+| Foundry Agent API (`/foundryagent/`) | ✅ 常に適用       | プロダクト ID × デプロイ名         | すべてのクライアント（ユーザーおよびマネージド ID 含む）   |
+| OpenAI API (`/openai/`)              | ✅ 条件付き適用   | デプロイメント名（`deploymentId`） | AI Search MI を除くユーザーコンテキストまたはマネージド ID |
+
+#### トークン使用量のメトリクス送信
 
 また、OpenAI 操作ポリシーでは `llm-emit-token-metric` によりトークン使用量をメトリクスとして Application Insights に送信しています。
 
