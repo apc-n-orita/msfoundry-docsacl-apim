@@ -556,11 +556,11 @@ resource "azapi_resource" "conn_foundryiq_docsacl" {
 
 # ロール割り当て
 resource "azurerm_role_assignment" "ai_foundry_project_azure_ai_user" {
-  for_each             = azapi_resource.ai_foundry_project
-  scope                = each.value.id
-  role_definition_name = "Azure AI User"
-  principal_id         = each.value.output.identity.principalId
-  depends_on           = [time_sleep.wait_project_identities]
+  for_each           = azapi_resource.ai_foundry_project
+  scope              = each.value.id
+  role_definition_id = "/providers/Microsoft.Authorization/roleDefinitions/53ca6127-db72-4b80-b1b0-d745d6d5456d"
+  principal_id       = each.value.output.identity.principalId
+  depends_on         = [time_sleep.wait_project_identities]
 }
 
 resource "azurerm_role_assignment" "ai_foundry_project_ai_search_index_data_reader" {

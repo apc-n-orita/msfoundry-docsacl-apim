@@ -62,7 +62,7 @@ Monitor タブの **Settings（歯車アイコン）** から以下を設定で�
 pip install "azure-ai-projects>=2.0.0"
 ```
 
-**事前準備**: プロジェクトのマネージド ID に **Azure AI User** ロールを付与する。
+**事前準備**: プロジェクトのマネージド ID に **Foundry User** ロールを付与する。
 
 ```python
 import os
