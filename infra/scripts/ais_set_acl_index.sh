@@ -23,6 +23,12 @@ resource_uri="${11}"
 deployment_id="${12}"
 model_name="${13}"
 
+if [ "$model_name" = "text-embedding-3-large" ]; then
+  dimensions=3072
+else
+  dimensions=1536
+fi
+
 # Get Azure access token
 echo "Getting Azure access token..."
 access_token=$(az account get-access-token --query accessToken -o tsv)
@@ -177,12 +183,12 @@ index_body=$(cat <<EOF
     {"name": "blob_url", "type": "Edm.String", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "synonymMaps": []},
     {"name": "snippet", "type": "Edm.String", "searchable": true, "filterable": false, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "synonymMaps": []},
     {"name": "image_snippet_parent_id", "type": "Edm.String", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "synonymMaps": []},
-    {"name": "snippet_vector", "type": "Collection(Edm.Single)", "searchable": true, "filterable": false, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "dimensions": 1536, "vectorSearchProfile": "tartalia-vector-search-profile", "synonymMaps": []},
+    {"name": "snippet_vector", "type": "Collection(Edm.Single)", "searchable": true, "filterable": false, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "dimensions": ${dimensions}, "vectorSearchProfile": "tartalia-vector-search-profile", "synonymMaps": []},
     {"name": "title", "type": "Edm.String", "searchable": true, "filterable": false, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "analyzer": "standard.lucene", "synonymMaps": []},
     {"name": "metadata_storage_name", "type": "Edm.String", "searchable": true, "filterable": true, "retrievable": true, "stored": true, "sortable": true, "facetable": false, "key": false, "analyzer": "standard.lucene", "synonymMaps": []},
-    {"name": "UserIds", "type": "Collection(Edm.String)", "searchable": true, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": true, "key": false, "permissionFilter": "userIds", "synonymMaps": []},
-    {"name": "GroupIds", "type": "Collection(Edm.String)", "searchable": true, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": true, "key": false, "permissionFilter": "groupIds", "synonymMaps": []},
-    {"name": "RbacScope", "type": "Edm.String", "searchable": true, "filterable": true, "retrievable": true, "stored": true, "sortable": true, "facetable": true, "key": false, "permissionFilter": "rbacScope", "synonymMaps": []},
+    {"name": "UserIds", "type": "Collection(Edm.String)", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "permissionFilter": "userIds", "synonymMaps": []},
+    {"name": "GroupIds", "type": "Collection(Edm.String)", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "permissionFilter": "groupIds", "synonymMaps": []},
+    {"name": "RbacScope", "type": "Edm.String", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": true, "facetable": false, "key": false, "permissionFilter": "rbacScope", "synonymMaps": []},
     {"name": "metadata_storage_path", "type": "Edm.String", "searchable": false, "filterable": true, "retrievable": true, "stored": true, "sortable": false, "facetable": false, "key": false, "synonymMaps": []}
   ],
   "scoringProfiles": [],
@@ -288,7 +294,7 @@ skillset_body=$(cat <<EOF
       "context": "/document/pages/*",
       "resourceUri": "${resource_uri}",
       "deploymentId": "${deployment_id}",
-      "dimensions": 1536,
+      "dimensions": ${dimensions},
       "modelName": "${model_name}",
       "inputs": [{"name": "text", "source": "/document/pages/*", "inputs": []}],
       "outputs": [{"name": "embedding", "targetName": "text_vector"}]
