@@ -73,7 +73,7 @@ LLM が回答を生成して返却
 | ----------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `PROJECT_ENDPOINT`            | AI Foundry Project のエンドポイント URL | `https://<foundry>.services.ai.azure.com/api/projects/aiproject`                                          |
 | `MODEL_DEPLOYMENT`            | チャットモデルのデプロイ名              | `gpt-4o`                                                                                                  |
-| `KB_ACL_MCP_URL`              | Knowledge Base MCP サーバー URL         | `https://<ais>.search.windows.net/knowledgebases/kb-tartalia-acl-gen2/mcp?api-version=2025-11-01-Preview` |
+| `KB_ACL_MCP_URL`              | Knowledge Base MCP サーバー URL         | `https://<ais>.search.windows.net/knowledgebases/kb-tartalia-acl-gen2/mcp?api-version=2026-05-01-Preview` |
 | `PROJECT_AIS_CONNECTION_NAME` | Foundry IQ への接続名                   | `foundryIQ-docsacl`                                                                                       |
 | `AZURE_OBO_CLIENT_ID`         | Entra ID アプリの Client ID             | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`                                                                    |
 | `AZURE_OBO_CLIENT_SECRET`     | Entra ID アプリの Client Secret         | (環境構築で発行したシークレット)                                                                          |

@@ -32,7 +32,7 @@ output "SEARCH_ENDPOINT" {
 }
 
 output "KB_ACL_MCP_URL" {
-  value = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-acl-gen2/mcp?api-version=2025-11-01-Preview"
+  value = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-acl-gen2/mcp?api-version=2026-05-01-Preview"
 }
 
 output "AZURE_OBO_CLIENT_ID" {

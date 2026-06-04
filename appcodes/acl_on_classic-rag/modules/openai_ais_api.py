@@ -39,7 +39,7 @@ def create_openai_ais_client(openai_endpoint, search_endpoint, index_name, crede
         endpoint=search_endpoint,
         index_name=index_name,
         credential=credential,
-        api_version="2025-11-01-preview",
+        api_version="2026-05-01-preview",
         http_client=http_client
     )
 

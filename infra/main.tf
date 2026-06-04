@@ -104,7 +104,7 @@ resource "azurerm_log_analytics_workspace" "law" {
 module "ai_foundry" {
   for_each                   = { for idx, s in var.ai_locations : idx => s }
   source                     = "./modules/AI/AIservice"
-  name                       = "aif-${var.environment_name}-${format("%03d", each.key + 1)}"
+  name                       = "aif-${var.environment_name}-${substr(local.resource_token, 0, 3)}-${format("%03d", each.key + 1)}"
   location                   = each.value
   resource_group_name        = azurerm_resource_group.rg.name
   tags                       = local.tags
@@ -519,7 +519,7 @@ resource "azapi_resource" "conn_foundryiq" {
       metadata = {
         type = "custom_MCP"
       }
-      target                      = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-${local.docs.acl_types[0]}-gen2/mcp?api-version=2025-11-01-Preview"
+      target                      = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-${local.docs.acl_types[0]}-gen2/mcp?api-version=2026-04-01"
       useWorkspaceManagedIdentity = false
     }
   }
@@ -547,7 +547,7 @@ resource "azapi_resource" "conn_foundryiq_docsacl" {
       metadata = {
         type = "custom_MCP"
       }
-      target                      = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-${local.docs.acl_types[1]}-gen2/mcp?api-version=2025-11-01-Preview"
+      target                      = "https://${module.ai_search.search_service_name}.search.windows.net/knowledgebases/kb-tartalia-${local.docs.acl_types[1]}-gen2/mcp?api-version=2026-05-01-preview"
       useWorkspaceManagedIdentity = false
     }
   }
@@ -556,11 +556,11 @@ resource "azapi_resource" "conn_foundryiq_docsacl" {
 
 # ロール割り当て
 resource "azurerm_role_assignment" "ai_foundry_project_azure_ai_user" {
-  for_each           = azapi_resource.ai_foundry_project
-  scope              = each.value.id
-  role_definition_id = "/providers/Microsoft.Authorization/roleDefinitions/53ca6127-db72-4b80-b1b0-d745d6d5456d"
-  principal_id       = each.value.output.identity.principalId
-  depends_on         = [time_sleep.wait_project_identities]
+  for_each             = azapi_resource.ai_foundry_project
+  scope                = each.value.id
+  role_definition_name = "Foundry User"
+  principal_id         = each.value.output.identity.principalId
+  depends_on           = [time_sleep.wait_project_identities]
 }
 
 resource "azurerm_role_assignment" "ai_foundry_project_ai_search_index_data_reader" {
@@ -611,6 +611,13 @@ resource "azurerm_role_assignment" "current_user_storage_blob_data_contributor" 
 resource "azurerm_role_assignment" "current_user_metrics_publisher" {
   scope                = azurerm_application_insights.AI.id
   role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+resource "azurerm_role_assignment" "current_user_foundry_user" {
+  for_each             = azapi_resource.ai_foundry_project
+  scope                = each.value.id
+  role_definition_name = "Foundry User"
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
@@ -705,6 +712,8 @@ resource "null_resource" "foundry_agent" {
     EOT
     interpreter = ["/bin/bash", "-c"]
   }
+
+  depends_on = [azurerm_role_assignment.current_user_foundry_user]
 }
 
 resource "azapi_resource" "grafana_dashboard" {
