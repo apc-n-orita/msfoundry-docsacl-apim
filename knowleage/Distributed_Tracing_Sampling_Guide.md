@@ -20,6 +20,7 @@
    - [トラフィック量別の推奨値](#トラフィック量別の推奨-samplingratio)
    - [初期設定の推奨手順](#初期設定の推奨手順)
    - [調整判断のための KQL ダッシュボード](#調整判断のための-kql-ダッシュボード)
+   - [エラートレースの優先記録](#エラートレースの優先記録)
    - [モニタリングアラートの設定](#モニタリングアラートの設定)
 
 ---
@@ -976,7 +977,7 @@ union requests, dependencies
 | summarize
     ObservedCount=count(),
     EstimatedOriginal=sum(itemCount),
-    DataVolumeMB=sum(estimate_data_size(*)) / 1048576.0
+    DataVolumeMB=sum(_BilledSize) / 1048576.0
     by bin(timestamp, 1d), name
 | extend RetainedPercentage = 100.0 * todouble(ObservedCount) / todouble(EstimatedOriginal)
 | project timestamp, name, ObservedCount, EstimatedOriginal, RetainedPercentage, DataVolumeMB
@@ -990,7 +991,7 @@ union requests, dependencies
 | where timestamp > ago(30d)
 | where name in ("knowledge-agent-session", "knowledge-classic-rag-session")
 | summarize
-    TotalDataSizeGB=sum(estimate_data_size(*)) / 1073741824.0,
+    TotalDataSizeGB=sum(_BilledSize) / 1073741824.0,
     TotalEvents=sum(itemCount)
 | extend
     EstimatedMonthlyCostUSD = TotalDataSizeGB * 2.88,  // Application Insights 価格（例: $2.88/GB）
@@ -1022,39 +1023,242 @@ union requests, dependencies
                             [再評価]
 ```
 
-### 特殊ケース: エラートレースの優先記録
+### エラートレースの優先記録
 
-エラーが発生したトレースを**優先的に記録**したい場合は、カスタムサンプラーを実装します。
+> 現在のデフォルト設定（RateLimitedSampler 5.0 tps）では低トラフィック時は
+> ほぼ全量記録されるため、現時点では問題は発生しにくいです。
+> **本番運用でサンプリング率を下げた際に備えて**以下のパターンを参照してください。
 
-```python
-from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio, ALWAYS_ON
-from opentelemetry.sdk.trace import TracerProvider, sampling
-
-# エラー時は必ず記録するカスタムサンプラー
-class ErrorAwareSampler(sampling.Sampler):
-    def __init__(self, base_sampler):
-        self.base_sampler = base_sampler
-
-    def should_sample(self, parent_context, trace_id, name, kind, attributes, links, trace_state):
-        # エラーまたは例外がある場合は必ず記録
-        if attributes and ('error' in attributes or 'exception' in attributes):
-            return sampling.SamplingResult(sampling.Decision.RECORD_AND_SAMPLE, attributes, trace_state)
-
-        # 通常は base_sampler に委譲
-        return self.base_sampler.should_sample(parent_context, trace_id, name, kind, attributes, links, trace_state)
-
-# 使用例
-base_sampler = ParentBasedTraceIdRatio(0.05)  # 5% base
-error_aware_sampler = ErrorAwareSampler(base_sampler)
-
-# TracerProvider に設定
-tracer_provider = TracerProvider(sampler=error_aware_sampler)
-```
-
-**注意:** Azure Monitor Distro を使う場合、カスタムサンプラーの適用は制限される場合があります。
-また、デフォルトで APIM の `always_log_errors=true` が有効なため、エラートレースは既に優先記録されます。
+エラーが発生したトレースを優先的に記録する方法として、以下のパターンがあります。
 
 ---
+
+#### 前提: 本プロジェクトのトレース ID 一貫性
+
+本プロジェクトでは W3C TraceContext（`traceparent` ヘッダー）による伝播が全レイヤーで実装済みです。
+
+```
+Python アプリ（user_chat_turn スパン）
+  → inject_traceparent() で trace_id を HTTP ヘッダーに付与
+    → APIM（同じ trace_id で記録）
+      → Foundry Agent（同じ trace_id で記録）
+```
+
+これにより `operation_Id`（= trace_id）を使って Application Insights の全テーブル（`requests` / `dependencies` / `traces` / `exceptions`）を横断して同一リクエストの全記録を参照できます。
+
+> **APIM の注意:** APIM の Diagnostic 設定は `always_log_errors=true` がデフォルトで有効です。
+> これはアプリ側のサンプリングとは独立しており、**APIM レイヤーで発生した HTTP エラーレスポンスは常に `dependencies` テーブルに記録されます。**
+
+---
+
+#### パターン比較
+
+| 方法                                                          | シンプルさ | 確実性 | OTel Collector | 主な制約                       |
+| ------------------------------------------------------------- | ---------- | ------ | -------------- | ------------------------------ |
+| `always_on` サンプリング                                      | ◎          | ✅     | 不要           | コスト増                       |
+| カスタム SpanProcessor 追加                                   | 中         | △      | 不要           | サンプリング決定の変更は不可   |
+| `enable_trace_based_sampling_for_logs=False` + Python logging | ◎          | ✅     | **不要**       | トレース全体は失う可能性あり   |
+| OTel Collector tail sampling                                  | 小         | ✅     | **必要**       | Collector のホスティングが必要 |
+
+---
+
+#### 推奨パターン A: `enable_trace_based_sampling_for_logs=False` + Python logging（OTel Collector 不要）
+
+**本プロジェクトへの推奨方法。** コード変更が最小限で、Collector も不要です。
+
+**仕組み:**
+
+Azure Monitor OpenTelemetry Distro はデフォルトで「サンプリングされなかったトレースに紐づくログも削除」しますが、`enable_trace_based_sampling_for_logs=False` を設定することでログをトレースサンプリングから切り離せます。
+
+```
+enable_trace_based_sampling_for_logs=True（デフォルト）:
+  スパン棄却 → logger.error() も削除 ❌
+
+enable_trace_based_sampling_for_logs=False（変更後）:
+  スパン棄却 → logger.error() は必ず送信 ✅
+              （operation_Id で相関は維持される）
+```
+
+**変更① `telemetry_utils.py`**
+
+```python
+def setup_telemetry(connection_string, credential):
+    configure_azure_monitor(
+        connection_string=connection_string,
+        credential=credential,
+        enable_trace_based_sampling_for_logs=False,  # ← 追加
+    )
+    return trace.get_tracer(__name__)
+```
+
+**変更② `response_api.py`（現在のコードに logger.error() を追加）**
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+# --- 既存のエラーハンドリング（変更後） ---
+
+except HttpResponseError as e:
+    # ① 既存：スパン属性にエラー情報を記録（トレースサンプリングに依存）
+    span.set_attribute("error_statuscode", str(e.status_code))
+    span.set_attribute("error_message", str(e.message))
+    span.set_attribute("error_type", type(e).__name__)
+    span.set_status(Status(StatusCode.ERROR, str(e)))
+    span.record_exception(e)
+    print(f"\n❌ HTTP エラー: {e.status_code} - {e.message}", file=sys.stderr)
+
+    # ② 追加：logging 経由で強制記録（トレースサンプリングに依存しない）
+    logger.error(
+        "HttpResponseError in user_chat_turn: [%s] %s",
+        e.status_code,
+        e.message,
+        exc_info=True,  # スタックトレースを含める
+        extra={
+            "error_statuscode": str(e.status_code),
+            "error_type": type(e).__name__,
+        },
+    )
+    continue
+
+except Exception as e:
+    # ① 既存
+    span.set_attribute("error_message", str(e))
+    span.set_attribute("error_type", type(e).__name__)
+    span.set_status(Status(StatusCode.ERROR, str(e)))
+    span.record_exception(e)
+    print(f"\n❌ エラーが発生しました: {type(e).__name__}: {e}", file=sys.stderr)
+
+    # ② 追加
+    logger.error(
+        "Unexpected error in user_chat_turn: [%s] %s",
+        type(e).__name__,
+        e,
+        exc_info=True,  # スタックトレースを含める
+        extra={
+            "error_message": str(e),
+            "error_type": type(e).__name__,
+        },
+    )
+    break
+```
+
+**Application Insights での確認（KQL）:**
+
+```kusto
+// エラーログを強制記録分として確認（traces テーブル）
+traces
+| where timestamp > ago(24h)
+| where severityLevel == 3  // Error
+| project timestamp, operation_Id, message, customDimensions
+| order by timestamp desc
+```
+
+```kusto
+// operation_Id（trace_id）で全レイヤーを横断して相関確認
+let error_ops = traces
+| where severityLevel == 3
+| project operation_Id;
+
+union requests, dependencies, exceptions
+| where operation_Id in (error_ops)
+| project timestamp, itemType, name, operation_Id, resultCode
+| order by timestamp asc
+```
+
+**参照:** [Configure Azure Monitor OpenTelemetry - Enable Sampling | Microsoft Learn](https://learn.microsoft.com/azure/azure-monitor/app/opentelemetry-configuration#enable-sampling)
+
+---
+
+#### 推奨パターン B: OTel Collector tail sampling（最も確実）
+
+**真の tail-based サンプリング。** トレースが完結してからエラー発生の有無を判断して記録する唯一の方法です。トレース全体（スパン階層）を保持したい場合はこちら。
+
+```yaml
+# otel-collector-config.yaml
+processors:
+  tail_sampling:
+    decision_wait: 10s # トレース完結を待つ最大時間（これを超えるとドロップ）
+    num_traces: 50000
+    policies:
+      # ① エラートレースは必ず全件記録
+      - name: error-policy
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+
+      # ② 遅延トレース（1秒超）も記録
+      - name: slow-policy
+        type: latency
+        latency:
+          threshold_ms: 1000
+
+      # ③ 正常トレースは10%にサンプリング
+      - name: normal-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+exporters:
+  azuremonitor:
+    connection_string: "${APPLICATIONINSIGHTS_CONNECTION_STRING}"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [tail_sampling]
+      exporters: [azuremonitor]
+```
+
+アプリ側はエクスポート先を Collector に変更:
+
+```bash
+# Azure Monitor への直接送信をやめ、Collector 経由にする
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+# サンプリングは Collector に委任
+export OTEL_TRACES_SAMPLER=always_on
+```
+
+**特徴:**
+
+- エラー・遅延・特定条件のトレースをスパン階層ごと**確実に全件記録**できる
+- `decision_wait` はトレースの最大期待時間より長く設定する（超過するとドロップ）
+- Collector のホスティング・維持コストが発生する
+- Live Metrics との互換性は Collector 構成による
+
+**参照:**
+
+- [Tail Sampling Processor | GitHub](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor)
+- [OpenTelemetry Sampling concepts](https://opentelemetry.io/docs/concepts/sampling/)
+
+---
+
+#### 参考: その他のパターン
+
+**`always_on` サンプリング（最もシンプル）:**
+
+```python
+configure_azure_monitor(
+    connection_string=connection_string,
+    credential=credential,
+    sampling_ratio=1.0,  # 100% 記録
+)
+```
+
+全トレースを記録するため確実ですが、トラフィック増加時にコストが比例して増大します。
+
+**カスタム SpanProcessor（エラー属性の補強のみ有効）:**
+
+`configure_azure_monitor(span_processors=[...])` で追加できますが、`on_end()` でのサンプリング決定の変更は不可です（head-based サンプリングはスパン開始時に決定済みのため）。エラースパンへの追加属性付与など補強用途には有効です。
+
+---
+
+**本プロジェクトへの推奨:**
+
+- **まず試すなら**: パターン A（`enable_trace_based_sampling_for_logs=False` + `logger.error()`）
+  - コード変更 2 箇所のみ、Collector 不要、trace_id による全レイヤー相関も維持
+- **トレース全体（スパン階層）が必要な場合**: パターン B（OTel Collector）
 
 ### モニタリングアラートの設定
 
